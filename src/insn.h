@@ -20,7 +20,7 @@ typedef struct {
 
 inline insn_utype insn_utype_read(u32 data) {
     return (insn_utype) {
-        .imm = data & 0xfffff000,
+        .imm = (i32)data & 0xfffff000,
         .rd = RD(data),
     };
 }
@@ -174,7 +174,6 @@ inline insn_citype insn_citype_read2(u16 data) {
     u32 imm5  = (data >> 12) & 0x1;
 
     i32 imm = (imm86 << 6) | (imm43 << 3) | (imm5 << 5);
-    imm = (imm << 23) >> 23;
 
     return (insn_citype) {
         .imm = imm,
@@ -350,11 +349,11 @@ typedef struct {
 } insn_csstype;
 
 inline insn_csstype insn_csstype_read(u16 data) {
-    u32 imm86 = (data >>  7) & 0x3;
+    u32 imm86 = (data >>  7) & 0x7;
     u32 imm53 = (data >> 10) & 0x7;
 
     i32 imm = (imm86 << 6) | (imm53 << 3);
-    imm = (imm << 23) >> 23;
+
     return (insn_csstype) {
         .imm = imm,
         .rs2 = RC2(data),
@@ -363,10 +362,10 @@ inline insn_csstype insn_csstype_read(u16 data) {
 
 inline insn_csstype insn_csstype_read2(u16 data) {
     u32 imm76 = (data >> 7) & 0x3;
-    u32 imm52 = (data >> 9) & 0x7;
+    u32 imm52 = (data >> 9) & 0xf;
 
     i32 imm = (imm76 << 6) | (imm52 << 2);
-    imm = (imm << 24) >> 24;
+
     return (insn_csstype) {
         .imm = imm,
         .rs2 = RC2(data),

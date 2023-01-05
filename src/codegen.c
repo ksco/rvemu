@@ -52,7 +52,7 @@
 
 #define REG_SET_VAL(reg, val)                                \
     if ((reg) != 0) {                                        \
-        sprintf(buf, "    x%d = 0x%lxULL;\n", (reg), (val)); \
+        sprintf(buf, "    x%d = %luULL;\n", (reg), (val)); \
         body = str_append(body, buf);                        \
     }                                                        \
 
@@ -184,7 +184,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_ciwtype insn = insn_ciwtype_read(data);
                 assert(insn.imm != 0);
                 REG_GET(sp, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 REG_SET_EXPR(insn.rd, tmpbuf);
 
                 tracer_add_gp_reg_usage(&tracer, sp, insn.rd, -1);
@@ -193,7 +193,7 @@ str_t machine_genblock(machine_t *m) {
             case 0x2: { /* C.LW */
                 insn_cltype insn = insn_cltype_read(data);
                 REG_GET(insn.rs1, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_LOAD(tmpbuf, "int32_t", rd);
                 REG_SET_EXPR(insn.rd, "(int64_t)rd");
 
@@ -203,7 +203,7 @@ str_t machine_genblock(machine_t *m) {
             case 0x3: { /* C.LD */
                 insn_cltype insn = insn_cltype_read2(data);
                 REG_GET(insn.rs1, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_LOAD(tmpbuf, "int64_t", rd);
                 REG_SET_EXPR(insn.rd, "rd");
 
@@ -214,7 +214,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_cstype insn = insn_cstype_read2(data);
                 REG_GET(insn.rs1, rs1);
                 REG_GET(insn.rs2, rs2);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_STORE(tmpbuf, "uint32_t", rs2);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rs1, insn.rs2, -1);
@@ -224,7 +224,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_cstype insn = insn_cstype_read(data);
                 REG_GET(insn.rs1, rs1);
                 REG_GET(insn.rs2, rs2);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_STORE(tmpbuf, "uint64_t", rs2);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rs1, insn.rs2, -1);
@@ -241,7 +241,7 @@ str_t machine_genblock(machine_t *m) {
             case 0x0: { /* C.ADDI */
                 insn_citype insn = insn_citype_read(data);
                 REG_GET(insn.rd, rd);
-                sprintf(tmpbuf, "rd + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rd + (int64_t)%ldLL", (i64)insn.imm);
                 REG_SET_EXPR(insn.rd, tmpbuf);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rd, -1);
@@ -251,7 +251,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_citype insn = insn_citype_read(data);
                 assert(insn.rd != 0);
                 REG_GET(insn.rd, rd);
-                sprintf(tmpbuf, "(int64_t)(int32_t)(rd + 0x%xULL)", insn.imm);
+                sprintf(tmpbuf, "(int64_t)(int32_t)(rd + (int64_t)%ldLL)", (i64)insn.imm);
                 REG_SET_EXPR(insn.rd, tmpbuf);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rd, -1);
@@ -270,12 +270,12 @@ str_t machine_genblock(machine_t *m) {
                     insn_citype insn = insn_citype_read3(data);
                     assert(insn.imm != 0);
                     REG_GET(insn.rd, rd);
-                    sprintf(tmpbuf, "rd + 0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rd + (int64_t)%ldLL", (i64)insn.imm);
                     REG_SET_EXPR(insn.rd, tmpbuf);
                 } else { /* C.LUI */
                     insn_citype insn = insn_citype_read5(data);
                     assert(insn.imm != 0);
-                    sprintf(tmpbuf, "0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "(int64_t)%ldLL", (i64)insn.imm);
                     REG_SET_EXPR(insn.rd, tmpbuf);
                 }
 
@@ -293,11 +293,11 @@ str_t machine_genblock(machine_t *m) {
 
                     REG_GET(insn.rs1, rs1);
                     if (cfunct2high == 0x0) {
-                        sprintf(tmpbuf, "rs1 >> 0x%xU", insn.imm & 0x3f);
+                        sprintf(tmpbuf, "rs1 >> %d", insn.imm & 0x1f);
                     } else if (cfunct2high == 0x1) {
-                        sprintf(tmpbuf, "(int64_t)rs1 >> 0x%xU", insn.imm & 0x3f);
+                        sprintf(tmpbuf, "(int64_t)rs1 >> %d", insn.imm & 0x1f);
                     } else {
-                        sprintf(tmpbuf, "rs1 & 0x%lxULL", (i64)insn.imm);
+                        sprintf(tmpbuf, "rs1 & %luULL", (i64)insn.imm);
                     }
                     REG_SET_EXPR(insn.rs1, tmpbuf);
 
@@ -408,7 +408,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_citype insn = insn_citype_read(data);
 
                 REG_GET(insn.rd, rd);
-                sprintf(tmpbuf, "rd << %d", insn.imm & 0x3f);
+                sprintf(tmpbuf, "rd << %d", insn.imm & 0x1f);
                 REG_SET_EXPR(insn.rd, tmpbuf);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rd, -1);
@@ -418,7 +418,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_citype insn = insn_citype_read4(data);
                 assert(insn.rd != 0);
                 REG_GET(sp, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_LOAD(tmpbuf, "int32_t", rd);
                 REG_SET_EXPR(insn.rd, "rd");
 
@@ -429,7 +429,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_citype insn = insn_citype_read2(data);
                 assert(insn.rd != 0);
                 REG_GET(sp, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_LOAD(tmpbuf, "int64_t", rd);
                 REG_SET_EXPR(insn.rd, "rd");
 
@@ -496,7 +496,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_csstype insn = insn_csstype_read2(data);
                 REG_GET(sp, rs1);
                 REG_GET(insn.rs2, rs2);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_STORE(tmpbuf, "uint32_t", rs2);
 
                 tracer_add_gp_reg_usage(&tracer, sp, insn.rs2, -1);
@@ -506,7 +506,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_csstype insn = insn_csstype_read(data);
                 REG_GET(sp, rs1);
                 REG_GET(insn.rs2, rs2);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_STORE(tmpbuf, "uint64_t", rs2);
 
                 tracer_add_gp_reg_usage(&tracer, sp, insn.rs2, -1);
@@ -551,7 +551,7 @@ str_t machine_genblock(machine_t *m) {
 
                 insn_itype insn = insn_itype_read(data);
                 REG_GET(insn.rs1, rs1);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_LOAD(tmpbuf, typ, rd);
                 REG_SET_EXPR(insn.rd, "rd");
 
@@ -580,7 +580,7 @@ str_t machine_genblock(machine_t *m) {
 
                 switch (funct3) {
                 case 0x0: { /* ADDI */
-                    sprintf(tmpbuf, "rs1 + 0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 }
                 break;
                 case 0x1: {
@@ -593,15 +593,15 @@ str_t machine_genblock(machine_t *m) {
                 }
                 break;
                 case 0x2: { /* SLTI */
-                    sprintf(tmpbuf, "(int64_t)rs1 < (int64_t)0x%lxLL ? 1 : 0", (i64)insn.imm);
+                    sprintf(tmpbuf, "(int64_t)rs1 < (int64_t)%ldLL ? 1 : 0", (i64)insn.imm);
                 }
                 break;
                 case 0x3: { /* SLTIU */
-                    sprintf(tmpbuf, "rs1 < 0x%lxULL ? 1 : 0", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 < %luULL ? 1 : 0", (i64)insn.imm);
                 }
                 break;
                 case 0x4: { /* XORI */
-                    sprintf(tmpbuf, "rs1 ^ 0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 ^ %luULL", (i64)insn.imm);
                 }
                 break;
                 case 0x5: {
@@ -617,11 +617,11 @@ str_t machine_genblock(machine_t *m) {
                 }
                 break;
                 case 0x6: { /* ORI */
-                    sprintf(tmpbuf, "rs1 | 0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 | %luULL", (i64)insn.imm);
                 }
                 break;
                 case 0x7: { /* ANDI */
-                    sprintf(tmpbuf, "rs1 & 0x%lxULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 & %ldLL", (i64)insn.imm);
                 }
                 break;
                 default: fatal("unrecognized funct3");
@@ -648,22 +648,22 @@ str_t machine_genblock(machine_t *m) {
 
                 switch (funct3) {
                 case 0x0: { /* ADDIW */
-                    sprintf(tmpbuf, "(int64_t)(int32_t)(rs1 + 0x%xULL)", insn.imm);
+                    sprintf(tmpbuf, "(int64_t)(int32_t)(rs1 + (int64_t)%ldLL)", (i64)insn.imm);
                 }
                 break;
                 case 0x1: { /* SLLIW */
                     assert(funct7 == 0);
-                    sprintf(tmpbuf, "(int64_t)(int32_t)(rs1 << %d)", insn.imm & 0x3f);
+                    sprintf(tmpbuf, "(int64_t)(int32_t)(rs1 << %d)", insn.imm & 0x1f);
                 }
                 break;
                 case 0x5: {
                     switch (funct7) {
                     case 0x0: { /* SRLIW */
-                        sprintf(tmpbuf, "(int64_t)(int32_t)((uint32_t)rs1 >> 0x%xULL)", insn.imm & 0x3f);
+                        sprintf(tmpbuf, "(int64_t)(int32_t)((uint32_t)rs1 >> %d)", insn.imm & 0x1f);
                     }
                     break;
                     case 0x20: { /* SRAIW */
-                        sprintf(tmpbuf, "(int64_t)((int32_t)rs1 >> 0x%xULL)", insn.imm & 0x3f);
+                        sprintf(tmpbuf, "(int64_t)((int32_t)rs1 >> %d)", insn.imm & 0x1f);
                     }
                     break;
                     default: unreachable();
@@ -700,7 +700,7 @@ str_t machine_genblock(machine_t *m) {
 
                 REG_GET(insn.rs1, rs1);
                 REG_GET(insn.rs2, rs2);
-                sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
+                sprintf(tmpbuf, "rs1 + (int64_t)%ldLL", (i64)insn.imm);
                 MEM_STORE(tmpbuf, typ, rs2);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rs1, insn.rs2, -1);
@@ -848,7 +848,7 @@ str_t machine_genblock(machine_t *m) {
                 }
             }
             break;
-            case 0xd: {
+            case 0xd: { /* LUI */
                 insn_utype insn = insn_utype_read(data);
                 REG_SET_VAL(insn.rd, (i64)insn.imm);
 
@@ -992,7 +992,7 @@ str_t machine_genblock(machine_t *m) {
                 REG_SET_VAL(insn.rd, return_addr);
 
                 body = str_append(body, "    state->exit_reason = indirect_branch;\n");
-                sprintf(tmpbuf, "    state->reenter_pc = (rs1 + (int64_t)0x%lxLL) & ~(uint64_t)1;\n", (i64)insn.imm);
+                sprintf(tmpbuf, "    state->reenter_pc = (rs1 + (int64_t)%ldLL) & ~(uint64_t)1;\n", (i64)insn.imm);
                 body = str_append(body, tmpbuf);
                 body = str_append(body, "    goto end;\n");
                 body = str_append(body, "}\n");
@@ -1019,7 +1019,7 @@ str_t machine_genblock(machine_t *m) {
             case 0x1c: {
                 if (data == 0x73) { /* ECALL */
                     body = str_append(body, "    state->exit_reason = ecall;\n");
-                    sprintf(tmpbuf, "    state->reenter_pc = 0x%lx;\n", pc + 4);
+                    sprintf(tmpbuf, "    state->reenter_pc = %luULL;\n", pc + 4);
                     body = str_append(body, tmpbuf);
                     body = str_append(body, "    goto end;\n");
                     body = str_append(body, "}\n");
@@ -1052,5 +1052,6 @@ str_t machine_genblock(machine_t *m) {
     source = str_append(source, "end:\n");
     source = tracer_append_epilogue(&tracer, source);
     source = str_append(source, CODEGEN_EPILOGUE);
+
     return source;
 }
