@@ -1,6 +1,6 @@
 #include "rvemu.h"
 
-static u64 hash(u64 elem) {
+static inline u64 hash(u64 elem) {
     return elem % SET_SIZE;
 }
 

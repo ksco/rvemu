@@ -26,8 +26,6 @@
 #define MIN(x, y)       ((y) > (x) ? (x) : (y))
 #define MAX(x, y)       ((y) < (x) ? (x) : (y))
 
-#define PAGE_SIZE 4 * 1024
-
 /**
  * stack.c
  */
@@ -175,7 +173,7 @@ void machine_load_program(machine_t *, char*);
  * set.c
 */
 
-#define SET_SIZE (4096)
+#define SET_SIZE (32 * 1024)
 
 typedef struct {
     u64 table[SET_SIZE];
