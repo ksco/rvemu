@@ -512,7 +512,7 @@ str_t machine_genblock(machine_t *m) {
                 tracer_add_gp_reg_usage(&tracer, sp, insn.rs2, -1);
             }
             break;
-            default: printf("data: %x\n", data); fatal("unrecognized copcode");
+            default: fatal("unrecognized copcode");
             }
         }
         break;
