@@ -52,7 +52,7 @@
 
 #define REG_SET_VAL(reg, val)                                \
     if ((reg) != 0) {                                        \
-        sprintf(buf, "    x%d = %luULL;\n", (reg), (val)); \
+        sprintf(buf, "    x%d = %ldLL;\n", (reg), (val));    \
         body = str_append(body, buf);                        \
     }                                                        \
 
@@ -297,7 +297,7 @@ str_t machine_genblock(machine_t *m) {
                     } else if (cfunct2high == 0x1) {
                         sprintf(tmpbuf, "(int64_t)rs1 >> %d", insn.imm & 0x1f);
                     } else {
-                        sprintf(tmpbuf, "rs1 & %luULL", (i64)insn.imm);
+                        sprintf(tmpbuf, "rs1 & %ldLL", (i64)insn.imm);
                     }
                     REG_SET_EXPR(insn.rs1, tmpbuf);
 
@@ -601,7 +601,7 @@ str_t machine_genblock(machine_t *m) {
                 }
                 break;
                 case 0x4: { /* XORI */
-                    sprintf(tmpbuf, "rs1 ^ %luULL", (i64)insn.imm);
+                    sprintf(tmpbuf, "rs1 ^ %ldLL", (i64)insn.imm);
                 }
                 break;
                 case 0x5: {
