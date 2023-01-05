@@ -107,7 +107,7 @@ inline insn_stype insn_stype_read(u32 data) {
     u32 imm40  = (data >>  7) & 0x1f;
 
     i32 imm = (imm115 << 5) | imm40;
-    imm = ((imm) << 20) >> 20;
+    imm = (imm << 20) >> 20;
     return (insn_stype) {
         .imm = imm,
         .rs1 = RS1(data),
@@ -126,8 +126,6 @@ inline insn_stype insn_stype_read(u32 data) {
 #define RP2(data)         (((data) >>  2) & 0x7 )
 #define RC1(data)         (((data) >>  7) & 0x1f)
 #define RC2(data)         (((data) >>  2) & 0x1f)
-#define CIMM5(data)       (((data) >>  2) & 0x1f)
-#define CIMM1(data)       (((data) >> 12) & 0x1 )
 
 typedef struct {
     i32 rs1;
@@ -159,10 +157,10 @@ typedef struct {
 } insn_citype;
 
 inline insn_citype insn_citype_read(u16 data) {
-    i32 imm = CIMM5(data);
-    if (CIMM1(data)) {
-        imm |= ~((u64)0x1f);
-    }
+    u32 imm40 = (data >>  2) & 0x1f;
+    u32 imm5  = (data >> 12) & 0x1;
+    i32 imm = (imm5 << 5) | imm40;
+    imm = (imm << 26) >> 26;
 
     return (insn_citype) {
         .imm = imm,
@@ -214,19 +212,6 @@ inline insn_citype insn_citype_read4(u16 data) {
 }
 
 inline insn_citype insn_citype_read5(u16 data) {
-    u32 imm5  = (data >> 12) & 0x1;
-    u32 imm43 = (data >>  5) & 0x3;
-    u32 imm86 = (data >>  2) & 0x7;
-
-    i32 imm = (imm5 << 5) | (imm43 << 3) | (imm86 << 6);
-
-    return (insn_citype) {
-        .imm = imm,
-        .rd = RC1(data),
-    };
-}
-
-inline insn_citype insn_citype_read6(u16 data) {
     u32 imm1612 = (data >>  2) & 0x1f;
     u32 imm17   = (data >> 12) & 0x1;
 
@@ -260,10 +245,10 @@ inline insn_cbtype insn_cbtype_read(u16 data) {
 }
 
 inline insn_cbtype insn_cbtype_read2(u16 data) {
-    i32 imm = CIMM5(data);
-    if (CIMM1(data)) {
-        imm |= ~((u64)0x1f);
-    }
+    u32 imm40 = (data >>  2) & 0x1f;
+    u32 imm5  = (data >> 12) & 0x1;
+    i32 imm = (imm5 << 5) | imm40;
+    imm = (imm << 26) >> 26;
 
     return (insn_cbtype) {
         .imm = imm,
@@ -281,7 +266,7 @@ inline insn_cstype insn_cstype_read(u16 data) {
     u32 imm76 = (data >>  5) & 0x3;
     u32 imm53 = (data >> 10) & 0x7;
 
-    i32 imm = ((imm76 << 6) | (imm53 << 4));
+    i32 imm = ((imm76 << 6) | (imm53 << 3));
 
     return (insn_cstype) {
         .imm = imm,

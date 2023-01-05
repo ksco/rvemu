@@ -273,7 +273,7 @@ str_t machine_genblock(machine_t *m) {
                     sprintf(tmpbuf, "rd + 0x%lxULL", (i64)insn.imm);
                     REG_SET_EXPR(insn.rd, tmpbuf);
                 } else { /* C.LUI */
-                    insn_citype insn = insn_citype_read6(data);
+                    insn_citype insn = insn_citype_read5(data);
                     assert(insn.imm != 0);
                     sprintf(tmpbuf, "0x%lxULL", (i64)insn.imm);
                     REG_SET_EXPR(insn.rd, tmpbuf);
@@ -426,7 +426,7 @@ str_t machine_genblock(machine_t *m) {
             }
             break;
             case 0x3: { /* C.LDSP */
-                insn_citype insn = insn_citype_read5(data);
+                insn_citype insn = insn_citype_read2(data);
                 assert(insn.rd != 0);
                 REG_GET(sp, rs1);
                 sprintf(tmpbuf, "rs1 + 0x%lxLL", (i64)insn.imm);
