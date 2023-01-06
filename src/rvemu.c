@@ -18,6 +18,13 @@ int main(int argc, char *argv[]) {
         case ecall: {
             u64 syscall = machine_get_gp_reg(&machine, a7);
             switch (syscall) {
+            case 57: { /* CLOSE */
+                i64 fd = machine_get_gp_reg(&machine, a0);
+                if (fd > 2) {
+                    machine_set_gp_reg(&machine, a0, close(fd));
+                }
+            }
+            break;
             case 64: { /* WRITE */
                 i64 fd = machine_get_gp_reg(&machine, a0);
                 u64 ptr = machine_get_gp_reg(&machine, a1);
