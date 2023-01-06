@@ -17,7 +17,7 @@ static void mmu_load_segment(mmu_t *mmu, elf64_phdr_t *phdr, int fd) {
     if (ret == -1) {
         fatal(strerror(errno));
     }
-    mmu->alloc = MAX(mmu->alloc, phdr->p_memsz);
+    mmu->alloc = MAX(mmu->alloc, (vaddr + phdr->p_memsz));
 }
 
 void mmu_load_elf(mmu_t *mmu, int fd, off_t sz) {
