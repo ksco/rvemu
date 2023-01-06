@@ -293,9 +293,9 @@ str_t machine_genblock(machine_t *m) {
 
                     REG_GET(insn.rs1, rs1);
                     if (cfunct2high == 0x0) {
-                        sprintf(tmpbuf, "rs1 >> %d", insn.imm & 0x1f);
+                        sprintf(tmpbuf, "rs1 >> %d", insn.imm & 0x3f);
                     } else if (cfunct2high == 0x1) {
-                        sprintf(tmpbuf, "(int64_t)rs1 >> %d", insn.imm & 0x1f);
+                        sprintf(tmpbuf, "(int64_t)rs1 >> %d", insn.imm & 0x3f);
                     } else {
                         sprintf(tmpbuf, "rs1 & %ldLL", (i64)insn.imm);
                     }
@@ -408,7 +408,7 @@ str_t machine_genblock(machine_t *m) {
                 insn_citype insn = insn_citype_read(data);
 
                 REG_GET(insn.rd, rd);
-                sprintf(tmpbuf, "rd << %d", insn.imm & 0x1f);
+                sprintf(tmpbuf, "rd << %d", insn.imm & 0x3f);
                 REG_SET_EXPR(insn.rd, tmpbuf);
 
                 tracer_add_gp_reg_usage(&tracer, insn.rd, -1);
