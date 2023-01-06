@@ -115,6 +115,20 @@ inline insn_stype insn_stype_read(u32 data) {
     };
 }
 
+typedef struct {
+    u32 csr;
+    i32 rs1;
+    i32 rd;
+} insn_csrtype;
+
+inline insn_csrtype insn_csrtype_read(u32 data) {
+    return (insn_csrtype) {
+        .csr = data >> 20,
+        .rs1 = RS1(data),
+        .rd =  RD(data),
+    };
+}
+
 /**
  * compressed types
 */

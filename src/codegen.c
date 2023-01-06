@@ -10,6 +10,7 @@
     "    uint64_t reenter_pc;                       \n" \
     "    uint64_t gp_regs[32];                      \n" \
     "    uint64_t fp_regs[32];                      \n" \
+    "    uint64_t csrs[4096];                       \n" \
     "    uint64_t pc;                               \n" \
     "    uint8_t *restrict mem;                     \n" \
     "} state_t;                                     \n" \
@@ -1023,10 +1024,36 @@ str_t machine_genblock(machine_t *m) {
                     body = str_append(body, tmpbuf);
                     body = str_append(body, "    goto end;\n");
                     body = str_append(body, "}\n");
-                } else {
-                    fatal("unimplemented");
+                    continue;
                 }
-                continue;
+
+                u32 funct3 = FUNCT3(data);
+                insn_csrtype insn = insn_csrtype_read(data);
+                switch(funct3) {
+                case 0x2: { /* CSRRS */
+                    if (insn.rd) {
+                        sprintf(buf, "x%d = *(uint64_t *)(state->csrs + %d);\n", insn.rd, insn.csr);
+                        body = str_append(body, buf);
+                    }
+                    if (insn.rs1 != 0) {
+                        sprintf(buf, "*(uint64_t *)(state->csrs + %d) |= x%d;\n", insn.csr, insn.rs1);
+                        body = str_append(body, buf);
+                    }
+                }
+                break;
+                case 0x6: { /* CSRRSI */
+                    if (insn.rd) {
+                        sprintf(buf, "x%d = *(uint64_t *)(state->csrs + %d);\n", insn.rd, insn.csr);
+                        body = str_append(body, buf);
+                    }
+                    if (insn.rs1 != 0) {
+                        sprintf(buf, "*(uint64_t *)(state->csrs + %d) |= %d;\n", insn.csr, insn.rs1);
+                        body = str_append(body, buf);
+                    }
+                }
+                break;
+                default: fatal("unimplemented");
+                }
             }
             break;
             default: fatal("unrecognized opcode");

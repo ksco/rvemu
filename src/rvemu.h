@@ -136,6 +136,7 @@ typedef struct {
     u64 reenter_pc;
     u64 gp_regs[num_gp_regs];
     u64 fp_regs[32];
+    u64 csrs[4096];
     u64 pc;
     u8 *mem;
 } state_t;
