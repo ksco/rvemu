@@ -60,7 +60,7 @@ typedef struct {
 } strhdr_t;
 
 inline str_t str_new() {
-    strhdr_t *h = calloc(1, sizeof(strhdr_t));
+    strhdr_t *h = (strhdr_t *)calloc(1, sizeof(strhdr_t));
     return h->buf;
 }
 
