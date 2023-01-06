@@ -834,7 +834,7 @@ str_t machine_genblock(machine_t *m) {
                     }
                     break;
                     case 0x5: { /* SRA */
-                        expr = "(int64_t)rs1 >> ((int64_t)rs2 & 0x3f)";
+                        expr = "(int64_t)rs1 >> (rs2 & 0x3f)";
                     }
                     break;
                     default: unreachable();
