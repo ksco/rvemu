@@ -56,6 +56,19 @@ int main(int argc, char *argv[]) {
                 exit(exit_code);
             }
             break;
+            case 169: { /* GETTIMEOFDAY */
+                u64 tv_addr = machine_get_gp_reg(&machine, a0);
+                u64 tz_addr = machine_get_gp_reg(&machine, a1);
+
+                struct timezone *tz = NULL;
+                if (tz_addr != 0) {
+                   tz = (struct timezone *)(machine.mmu.mem + tz_addr);
+                }
+
+                struct timeval *tv = (struct timeval *)(machine.mmu.mem + tv_addr);
+                machine_set_gp_reg(&machine, a0, gettimeofday(tv, tz));
+            }
+            break;
             case 214: { /* SBRK */
                 int incr = machine_get_gp_reg(&machine, a0);
                 assert(incr >= 0);
