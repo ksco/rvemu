@@ -5,10 +5,6 @@ void machine_setup(machine_t *m, int argc, char *argv[]) {
     u64 stack = mmu_alloc(&m->mmu, stack_size);
     m->state.gp_regs[sp] = stack + stack_size;
 
-    u64 program = mmu_alloc(&m->mmu, 4 * 1024);
-    u8 *name = (u8 *)"a.out";
-    mmu_write(&m->mmu, program, name, strlen((char *)name));
-
     m->state.gp_regs[sp] -= 8; // auxp
     m->state.gp_regs[sp] -= 8; // envp
     m->state.gp_regs[sp] -= 8; // argv end
