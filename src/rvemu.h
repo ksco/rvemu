@@ -125,11 +125,17 @@ u8 *cache_lookup(cache_t *, u64);
 u8 *cache_add(cache_t *, u64, u8 *, size_t);
 
 /**
- * static.c
+ * state.c
 */
 enum exit_reason_t {
     indirect_branch,
     ecall,
+};
+
+enum csr_t {
+    fflags = 0x001,
+    frm    = 0x002,
+    fcsr   = 0x003,
 };
 
 typedef struct {
@@ -137,9 +143,9 @@ typedef struct {
     u64 reenter_pc;
     u64 gp_regs[num_gp_regs];
     u64 fp_regs[32];
-    u64 csrs[4096];
     u64 pc;
     u8 *mem;
+    u32 fcsr;
 } state_t;
 
 void state_print_regs(state_t *);
