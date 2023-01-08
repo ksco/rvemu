@@ -1,5 +1,7 @@
 #include "rvemu.h"
 
+typedef void (*func_t)(state_t *);
+
 void machine_setup(machine_t *m, int argc, char *argv[]) {
     size_t stack_size = 32 * 1024;
     u64 stack = mmu_alloc(&m->mmu, stack_size);
