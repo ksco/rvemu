@@ -483,6 +483,7 @@ void machine_decode(machine_t *m, u64 pc, insn_t *insn) {
             *insn = insn_cjtype_read(data);
             insn->rd = zero;
             insn->type = insn_jal;
+            insn->cont = true;
             return;
         case 0x6: /* C.BEQZ */
         case 0x7: /* C.BNEZ */
@@ -525,6 +526,7 @@ void machine_decode(machine_t *m, u64 pc, insn_t *insn) {
                     assert(insn->rs1 != 0);
                     insn->rd = zero;
                     insn->type = insn_jalr;
+                    insn->cont = true;
                 } else { /* C.MV */
                     insn->rd = insn->rs1;
                     insn->rs1 = zero;
@@ -540,6 +542,7 @@ void machine_decode(machine_t *m, u64 pc, insn_t *insn) {
                 } else if (insn->rs2 == 0) { /* C.JALR */
                     insn->rd = ra;
                     insn->type = insn_jalr;
+                    insn->cont = true;
                 } else { /* C.ADD */
                     insn->rd = insn->rs1;
                     insn->type = insn_add;
@@ -899,14 +902,17 @@ void machine_decode(machine_t *m, u64 pc, insn_t *insn) {
         case 0x19: /* JALR */
             *insn = insn_itype_read(data);
             insn->type = insn_jalr;
+            insn->cont = true;
             return;
         case 0x1b: /* JAL */
             *insn = insn_jtype_read(data);
             insn->type = insn_jal;
+            insn->cont = true;
             return;
         case 0x1c: {
             if (data == 0x73) { /* ECALL */
                 insn->type = insn_ecall;
+                insn->cont = true;
                 return;
             }
 

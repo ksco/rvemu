@@ -488,7 +488,6 @@ static str_t func_jalr(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, 
     s = str_append(s, "    goto end;\n");
     s = str_append(s, "}\n");
     tracer_add_gp_reg_usage(tracer, insn->rs1, insn->rd, -1);
-    insn->cont = true;
     return s;
 }
 
@@ -503,7 +502,6 @@ static str_t func_jal(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u
     s = str_append(s, "}\n");
 
     tracer_add_gp_reg_usage(tracer, insn->rd, -1);
-    insn->cont = true;
     return s;
 }
 
@@ -513,7 +511,6 @@ static str_t func_ecall(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
     s = str_append(s, funcbuf);
     s = str_append(s, "    goto end;\n");
     s = str_append(s, "}\n");
-    insn->cont = true;
     return s;
 }
 
