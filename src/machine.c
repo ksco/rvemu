@@ -44,7 +44,8 @@ enum exit_reason_t machine_step(machine_t *m) {
             ((exec_block_func_t)code)(&m->state);
             assert(m->state.exit_reason != none);
 
-            if (m->state.exit_reason == indirect_branch) {
+            if (m->state.exit_reason == indirect_branch ||
+                m->state.exit_reason == direct_branch ) {
                 code = cache_lookup(m->cache, m->state.reenter_pc);
                 if (code != NULL) continue;
             }
@@ -54,6 +55,7 @@ enum exit_reason_t machine_step(machine_t *m) {
 
         m->state.pc = m->state.reenter_pc;
         switch (m->state.exit_reason) {
+        case direct_branch:
         case indirect_branch:
             // continue execution
             break;

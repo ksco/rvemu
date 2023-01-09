@@ -632,6 +632,7 @@ static func_t *funcs[] = {
 #define CODEGEN_PROLOGUE                                \
     "enum exit_reason_t {                           \n" \
     "   none,                                       \n" \
+    "   direct_branch,                              \n" \
     "   indirect_branch,                            \n" \
     "   ecall,                                      \n" \
     "};                                             \n" \

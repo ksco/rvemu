@@ -78,11 +78,11 @@ static void func_slli(state_t *state, insn_t *insn) {
 }
 
 static void func_slti(state_t *state, insn_t *insn) {
-    FUNC((i64)rs1 < imm);
+    FUNC((i64)rs1 < (i64)imm);
 }
 
 static void func_sltiu(state_t *state, insn_t *insn) {
-    FUNC(rs1 < (u64)imm);
+    FUNC((u64)rs1 < (u64)imm);
 }
 
 static void func_xori(state_t *state, insn_t *insn) {
@@ -302,14 +302,15 @@ static void func_lui(state_t *state, insn_t *insn) {
     state->gp_regs[insn->rd] = (i64)insn->imm;
 }
 
-#define FUNC(expr)                                \
-    u64 rs1 = state->gp_regs[insn->rs1];          \
-    u64 rs2 = state->gp_regs[insn->rs2];          \
-    u64 target_addr = state->pc + (i64)insn->imm; \
-    if (expr) {                                   \
-        state->pc = target_addr;                  \
-        insn->cont = true;                        \
-    }                                             \
+#define FUNC(expr)                                   \
+    u64 rs1 = state->gp_regs[insn->rs1];             \
+    u64 rs2 = state->gp_regs[insn->rs2];             \
+    u64 target_addr = state->pc + (i64)insn->imm;    \
+    if (expr) {                                      \
+        state->reenter_pc = state->pc = target_addr; \
+        state->exit_reason = direct_branch;          \
+        insn->cont = true;                           \
+    }                                                \
 
 static void func_beq(state_t *state, insn_t *insn) {
     FUNC((u64)rs1 == (u64)rs2);
@@ -346,7 +347,8 @@ static void func_jalr(state_t *state, insn_t *insn) {
 
 static void func_jal(state_t *state, insn_t *insn) {
     state->gp_regs[insn->rd] = state->pc + (insn->rvc ? 2 : 4);
-    state->pc = state->pc + (i64)insn->imm;
+    state->reenter_pc = state->pc = state->pc + (i64)insn->imm;
+    state->exit_reason = direct_branch;
 }
 
 static void func_ecall(state_t *state, insn_t *insn) {
@@ -474,9 +476,7 @@ void exec_block_interp(state_t *state) {
         funcs[insn.type](state, &insn);
         state->gp_regs[zero] = 0;
 
-        if (insn.type == insn_jalr || insn.type == insn_ecall) break;
-
-        if (insn.cont) continue;
+        if (insn.cont) break;
 
         state->pc += insn.rvc ? 2 : 4;
     }

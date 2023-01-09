@@ -156,6 +156,7 @@ bool cache_hot(cache_t *, u64);
 */
 enum exit_reason_t {
     none,
+    direct_branch,
     indirect_branch,
     ecall,
 };

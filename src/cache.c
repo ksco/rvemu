@@ -12,7 +12,7 @@ cache_t *new_cache() {
 }
 
 #define MAX_SEARCH_COUNT 32
-#define CACHE_HOT_COUNT  16
+#define CACHE_HOT_COUNT  32
 
 #define CACHE_IS_HOT (cache->table[index].hot >= CACHE_HOT_COUNT)
 
@@ -42,8 +42,6 @@ u8 *cache_add(cache_t *cache, u64 pc, u8 *code, size_t sz) {
     u64 search_count = 0;
     while (cache->table[index].pc != 0) {
         if (cache->table[index].pc == pc) {
-            if (CACHE_IS_HOT)
-                return cache->jitcode + cache->table[index].offset;
             break;
         }
 
