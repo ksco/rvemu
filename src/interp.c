@@ -394,6 +394,182 @@ static void func_csrrsi(state_t *state, insn_t *insn) {
     FUNC(insn->rs1);
 }
 
+#undef FUNC
+
+#define FUNC(typ)                                             \
+    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;    \
+    state->fp_regs[insn->rd].v = *(typ *)(state->mem + addr); \
+
+static void func_flw(state_t *state, insn_t *insn) {
+    FUNC(u32);
+}
+static void func_fld(state_t *state, insn_t *insn) {
+    FUNC(u64);
+}
+
+#undef FUNC
+
+#define FUNC(typ)                                      \
+    u64 rs1 = state->gp_regs[insn->rs1];               \
+    u64 rs2 = state->fp_regs[insn->rs2].v;             \
+    *(typ *)(state->mem + rs1 + insn->imm) = (typ)rs2; \
+
+static void func_fsw(state_t *state, insn_t *insn) {
+    FUNC(u32);
+}
+static void func_fsd(state_t *state, insn_t *insn) {
+    FUNC(u64);
+}
+
+#undef FUNC
+
+#define FUNC(expr)                            \
+    f32 rs1 = state->fp_regs[insn->rs1].f;    \
+    f32 rs2 = state->fp_regs[insn->rs2].f;    \
+    f32 rs3 = state->fp_regs[insn->rs3].f;    \
+    state->fp_regs[insn->rd].d = (f64)(expr); \
+
+static void func_fmadd_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2 + rs3);
+}
+
+static void func_fmsub_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2 - rs3);
+}
+
+static void func_fnmsub_s(state_t *state, insn_t *insn) {
+    FUNC(-(rs1 * rs2) + rs3);
+}
+
+static void func_fnmadd_s(state_t *state, insn_t *insn) {
+    FUNC(-(rs1 * rs2) - rs3);
+}
+
+#undef FUNC
+
+#define FUNC(expr)                         \
+    f32 rs1 = state->fp_regs[insn->rs1].d; \
+    f32 rs2 = state->fp_regs[insn->rs2].d; \
+    f32 rs3 = state->fp_regs[insn->rs3].d; \
+    state->fp_regs[insn->rd].d = (expr);   \
+
+static void func_fmadd_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2 + rs3);
+}
+static void func_fmsub_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2 - rs3);
+}
+static void func_fnmsub_d(state_t *state, insn_t *insn) {
+    FUNC(-(rs1 * rs2) + rs3);
+}
+static void func_fnmadd_d(state_t *state, insn_t *insn) {
+    FUNC(-(rs1 * rs2) - rs3);
+}
+
+#undef FUNC
+
+#define FUNC(expr)                                                 \
+    f32 rs1 = state->fp_regs[insn->rs1].f;                         \
+    __attribute__((unused)) f32 rs2 = state->fp_regs[insn->rs2].f; \
+    state->fp_regs[insn->rd].d = (f64)(expr);                      \
+
+static void func_fadd_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 + rs2);
+}
+
+static void func_fsub_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 - rs2);
+}
+
+static void func_fmul_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2);
+}
+
+static void func_fdiv_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 / rs2);
+}
+
+static void func_fsqrt_s(state_t *state, insn_t *insn) {
+    FUNC(sqrtf(rs1));
+}
+
+#undef FUNC
+
+#define FUNC(expr)                                                 \
+    f32 rs1 = state->fp_regs[insn->rs1].d;                         \
+    __attribute__((unused)) f32 rs2 = state->fp_regs[insn->rs2].d; \
+    state->fp_regs[insn->rd].d = (expr);                           \
+
+static void func_fadd_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 + rs2);
+}
+
+static void func_fsub_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 - rs2);
+}
+
+static void func_fmul_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 * rs2);
+}
+
+static void func_fdiv_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 / rs2);
+}
+
+static void func_fsqrt_d(state_t *state, insn_t *insn) {
+    FUNC(sqrt(rs1));
+}
+
+static void func_fsgnj_s(state_t *state, insn_t *insn) {}
+static void func_fsgnjn_s(state_t *state, insn_t *insn) {}
+static void func_fsgnjx_s(state_t *state, insn_t *insn) {}
+static void func_fsgnj_d(state_t *state, insn_t *insn) {}
+static void func_fsgnjn_d(state_t *state, insn_t *insn) {}
+static void func_fsgnjx_d(state_t *state, insn_t *insn) {}
+
+static void func_fmin_s(state_t *state, insn_t *insn) {}
+static void func_fmax_s(state_t *state, insn_t *insn) {}
+static void func_fmin_d(state_t *state, insn_t *insn) {}
+static void func_fmax_d(state_t *state, insn_t *insn) {}
+
+static void func_fcvt_w_s(state_t *state, insn_t *insn) {}
+static void func_fcvt_wu_s(state_t *state, insn_t *insn) {}
+static void func_fcvt_w_d(state_t *state, insn_t *insn) {}
+static void func_fcvt_wu_d(state_t *state, insn_t *insn) {}
+
+static void func_fcvt_s_w(state_t *state, insn_t *insn) {}
+static void func_fcvt_s_wu(state_t *state, insn_t *insn) {}
+static void func_fcvt_d_w(state_t *state, insn_t *insn) {}
+static void func_fcvt_d_wu(state_t *state, insn_t *insn) {}
+
+static void func_fmv_x_w(state_t *state, insn_t *insn) {}
+static void func_fmv_w_x(state_t *state, insn_t *insn) {}
+static void func_fmv_x_d(state_t *state, insn_t *insn) {}
+static void func_fmv_d_x(state_t *state, insn_t *insn) {}
+
+static void func_feq_s(state_t *state, insn_t *insn) {}
+static void func_flt_s(state_t *state, insn_t *insn) {}
+static void func_fle_s(state_t *state, insn_t *insn) {}
+static void func_feq_d(state_t *state, insn_t *insn) {}
+static void func_flt_d(state_t *state, insn_t *insn) {}
+static void func_fle_d(state_t *state, insn_t *insn) {}
+
+static void func_fclass_s(state_t *state, insn_t *insn) {}
+static void func_fclass_d(state_t *state, insn_t *insn) {}
+
+static void func_fcvt_l_s(state_t *state, insn_t *insn) {}
+static void func_fcvt_lu_s(state_t *state, insn_t *insn) {}
+static void func_fcvt_l_d(state_t *state, insn_t *insn) {}
+static void func_fcvt_lu_d(state_t *state, insn_t *insn) {}
+
+static void func_fcvt_s_l(state_t *state, insn_t *insn) {}
+static void func_fcvt_s_lu(state_t *state, insn_t *insn) {}
+static void func_fcvt_d_l(state_t *state, insn_t *insn) {}
+static void func_fcvt_d_lu(state_t *state, insn_t *insn) {}
+
+static void func_fcvt_s_d(state_t *state, insn_t *insn) {}
+static void func_fcvt_d_s(state_t *state, insn_t *insn) {}
+
 typedef void (func_t)(state_t *, insn_t *);
 
 static func_t *funcs[] = {
@@ -464,6 +640,68 @@ static func_t *funcs[] = {
     func_ecall,
     func_csrrs,
     func_csrrsi,
+    func_flw,
+    func_fsw,
+    func_fmadd_s,
+    func_fmsub_s,
+    func_fnmsub_s,
+    func_fnmadd_s,
+    func_fadd_s,
+    func_fsub_s,
+    func_fmul_s,
+    func_fdiv_s,
+    func_fsqrt_s,
+    func_fsgnj_s,
+    func_fsgnjn_s,
+    func_fsgnjx_s,
+    func_fmin_s,
+    func_fmax_s,
+    func_fcvt_w_s,
+    func_fcvt_wu_s,
+    func_fmv_x_w,
+    func_feq_s,
+    func_flt_s,
+    func_fle_s,
+    func_fclass_s,
+    func_fcvt_s_w,
+    func_fcvt_s_wu,
+    func_fmv_w_x,
+    func_fcvt_l_s,
+    func_fcvt_lu_s,
+    func_fcvt_s_l,
+    func_fcvt_s_lu,
+    func_fld,
+    func_fsd,
+    func_fmadd_d,
+    func_fmsub_d,
+    func_fnmsub_d,
+    func_fnmadd_d,
+    func_fadd_d,
+    func_fsub_d,
+    func_fmul_d,
+    func_fdiv_d,
+    func_fsqrt_d,
+    func_fsgnj_d,
+    func_fsgnjn_d,
+    func_fsgnjx_d,
+    func_fmin_d,
+    func_fmax_d,
+    func_fcvt_s_d,
+    func_fcvt_d_s,
+    func_feq_d,
+    func_flt_d,
+    func_fle_d,
+    func_fclass_d,
+    func_fcvt_w_d,
+    func_fcvt_wu_d,
+    func_fcvt_d_w,
+    func_fcvt_d_wu,
+    func_fcvt_l_d,
+    func_fcvt_lu_d,
+    func_fmv_x_d,
+    func_fcvt_d_l,
+    func_fcvt_d_lu,
+    func_fmv_d_x,
 };
 
 void exec_block_interp(state_t *state) {

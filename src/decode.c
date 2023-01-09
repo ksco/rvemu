@@ -9,6 +9,8 @@
 #define RD(data)     (((data) >>  7) & 0x1f)
 #define RS1(data)    (((data) >> 15) & 0x1f)
 #define RS2(data)    (((data) >> 20) & 0x1f)
+#define RS3(data)    (((data) >> 27) & 0x1f)
+#define FUNCT2(data) (((data) >> 25) & 0x3 )
 #define FUNCT3(data) (((data) >> 12) & 0x7 )
 #define FUNCT7(data) (((data) >> 25) & 0x7f)
 #define IMM116(data) (((data) >> 26) & 0x3f)
@@ -84,6 +86,15 @@ static inline insn_t insn_csrtype_read(u32 data) {
     return (insn_t) {
         .csr = data >> 20,
         .rs1 = RS1(data),
+        .rd =  RD(data),
+    };
+}
+
+static inline insn_t insn_fprtype_read(u32 data) {
+    return (insn_t) {
+        .rs1 = RS1(data),
+        .rs2 = RS2(data),
+        .rs3 = RS3(data),
         .rd =  RD(data),
     };
 }
@@ -600,6 +611,21 @@ void machine_decode(u32 data, insn_t *insn) {
             }
         }
         unreachable();
+        case 0x1: {
+            u32 funct3 = FUNCT3(data);
+
+            *insn = insn_itype_read(data);
+            switch (funct3) {
+            case 0x2: /* FLW */
+                insn->type = insn_flw;
+                return;
+            case 0x3: /* FLD */
+                insn->type = insn_fld;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
         case 0x3: {
             u32 funct3 = FUNCT3(data);
 
@@ -720,6 +746,21 @@ void machine_decode(u32 data, insn_t *insn) {
                 return;
             case 0x3: /* SD */
                 insn->type = insn_sd;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x9: {
+            u32 funct3 = FUNCT3(data);
+
+            *insn = insn_stype_read(data);
+            switch (funct3) {
+            case 0x2: /* FSW */
+                insn->type = insn_fsw;
+                return;
+            case 0x3: /* FSD */
+                insn->type = insn_fsd;
                 return;
             default: unreachable();
             }
@@ -867,6 +908,329 @@ void machine_decode(u32 data, insn_t *insn) {
                 }
             }
             unreachable();
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x10: {
+            u32 funct2 = FUNCT2(data);
+
+            *insn = insn_fprtype_read(data);
+            switch (funct2) {
+            case 0x0: /* FMADD.S */
+                insn->type = insn_fmadd_s;
+                return;
+            case 0x1: /* FMADD.D */
+                insn->type = insn_fmadd_d;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x11: {
+            u32 funct2 = FUNCT2(data);
+
+            *insn = insn_fprtype_read(data);
+            switch (funct2) {
+            case 0x0: /* FMSUB.S */
+                insn->type = insn_fmsub_s;
+                return;
+            case 0x1: /* FMSUB.D */
+                insn->type = insn_fmsub_d;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x12: {
+            u32 funct2 = FUNCT2(data);
+
+            *insn = insn_fprtype_read(data);
+            switch (funct2) {
+            case 0x0: /* FNMSUB.S */
+                insn->type = insn_fnmsub_s;
+                return;
+            case 0x1: /* FNMSUB.D */
+                insn->type = insn_fnmsub_d;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x13: {
+            u32 funct2 = FUNCT2(data);
+
+            *insn = insn_fprtype_read(data);
+            switch (funct2) {
+            case 0x0: /* FNMADD.S */
+                insn->type = insn_fnmadd_s;
+                return;
+            case 0x1: /* FNMADD.D */
+                insn->type = insn_fnmadd_d;
+                return;
+            default: unreachable();
+            }
+        }
+        unreachable();
+        case 0x14: {
+            u32 funct7 = FUNCT7(data);
+
+            *insn = insn_rtype_read(data);
+            switch (funct7) {
+            case 0x0:  /* FADD.S */
+                insn->type = insn_fadd_s;
+                return;
+            case 0x1:  /* FADD.D */
+                insn->type = insn_fadd_d;
+                return;
+            case 0x4:  /* FSUB.S */
+                insn->type = insn_fsub_s;
+                return;
+            case 0x5:  /* FSUB.D */
+                insn->type = insn_fsub_d;
+                return;
+            case 0x8:  /* FMUL.S */
+                insn->type = insn_fmul_s;
+                return;
+            case 0x9:  /* FMUL.D */
+                insn->type = insn_fmul_d;
+                return;
+            case 0xc:  /* FDIV.S */
+                insn->type = insn_fdiv_s;
+                return;
+            case 0xd:  /* FDIV.D */
+                insn->type = insn_fdiv_d;
+                return;
+            case 0x10: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FSGNJ.S */
+                    insn->type = insn_fsgnj_s;
+                    return;
+                case 0x1: /* FSGNJN.S */
+                    insn->type = insn_fsgnjn_s;
+                    return;
+                case 0x2: /* FSGNJX.S */
+                    insn->type = insn_fsgnjx_s;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x11: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FSGNJ.D */
+                    insn->type = insn_fsgnj_d;
+                    return;
+                case 0x1: /* FSGNJN.D */
+                    insn->type = insn_fsgnjn_d;
+                    return;
+                case 0x2: /* FSGNJX.D */
+                    insn->type = insn_fsgnjx_d;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x14: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FMIN.S */
+                    insn->type = insn_fmin_s;
+                    return;
+                case 0x1: /* FMAX.S */
+                    insn->type = insn_fmax_s;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x15: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FMIN.D */
+                    insn->type = insn_fmin_d;
+                    return;
+                case 0x1: /* FMAX.D */
+                    insn->type = insn_fmax_d;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x20: /* FCVT.S.D */
+                assert(RS2(data) == 1);
+                insn->type = insn_fcvt_s_d;
+                return;
+            case 0x21: /* FCVT.D.S */
+                assert(RS2(data) == 0);
+                insn->type = insn_fcvt_d_s;
+                return;
+            case 0x2c: /* FSQRT.S */
+                assert(insn->rs2 == 0);
+                insn->type = insn_fsqrt_s;
+                return;
+            case 0x2d: /* FSQRT.D */
+                assert(insn->rs2 == 0);
+                insn->type = insn_fsqrt_d;
+                return;
+            case 0x50: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FLE.S */
+                    insn->type = insn_fle_s;
+                    return;
+                case 0x1: /* FLT.S */
+                    insn->type = insn_flt_s;
+                    return;
+                case 0x2: /* FEQ.S */
+                    insn->type = insn_feq_s;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x51: {
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FLE.D */
+                    insn->type = insn_fle_d;
+                    return;
+                case 0x1: /* FLT.D */
+                    insn->type = insn_flt_d;
+                    return;
+                case 0x2: /* FEQ.D */
+                    insn->type = insn_feq_d;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x60: {
+                u32 rs2 = RS2(data);
+
+                switch (rs2) {
+                case 0x0: /* FCVT.W.S */
+                    insn->type = insn_fcvt_w_s;
+                    return;
+                case 0x1: /* FCVT.WU.S */
+                    insn->type = insn_fcvt_wu_s;
+                    return;
+                case 0x2: /* FCVT.L.S */
+                    insn->type = insn_fcvt_l_s;
+                    return;
+                case 0x3: /* FCVT.LU.S */
+                    insn->type = insn_fcvt_lu_s;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x61: {
+                u32 rs2 = RS2(data);
+
+                switch (rs2) {
+                case 0x0: /* FCVT.W.D */
+                    insn->type = insn_fcvt_w_d;
+                    return;
+                case 0x1: /* FCVT.WU.D */
+                    insn->type = insn_fcvt_wu_d;
+                    return;
+                case 0x2: /* FCVT.L.D */
+                    insn->type = insn_fcvt_l_d;
+                    return;
+                case 0x3: /* FCVT.LU.D */
+                    insn->type = insn_fcvt_lu_d;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x68: {
+                u32 rs2 = RS2(data);
+
+                switch (rs2) {
+                case 0x0: /* FCVT.S.W */
+                    insn->type = insn_fcvt_s_w;
+                    return;
+                case 0x1: /* FCVT.S.WU */
+                    insn->type = insn_fcvt_s_wu;
+                    return;
+                case 0x2: /* FCVT.S.L */
+                    insn->type = insn_fcvt_s_l;
+                    return;
+                case 0x3: /* FCVT.S.LU */
+                    insn->type = insn_fcvt_s_lu;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x69: {
+                u32 rs2 = RS2(data);
+
+                switch (rs2) {
+                case 0x0: /* FCVT.D.W */
+                    insn->type = insn_fcvt_d_w;
+                    return;
+                case 0x1: /* FCVT.D.WU */
+                    insn->type = insn_fcvt_d_wu;
+                    return;
+                case 0x2: /* FCVT.D.L */
+                    insn->type = insn_fcvt_d_l;
+                    return;
+                case 0x3: /* FCVT.D.LU */
+                    insn->type = insn_fcvt_d_lu;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x70: {
+                assert(RS2(data) == 0);
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FMV.X.W */
+                    insn->type = insn_fmv_x_w;
+                    return;
+                case 0x1: /* FCLASS.S */
+                    insn->type = insn_fclass_s;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x71: {
+                assert(RS2(data) == 0);
+                u32 funct3 = FUNCT3(data);
+
+                switch (funct3) {
+                case 0x0: /* FMV.X.D */
+                    insn->type = insn_fmv_x_d;
+                    return;
+                case 0x1: /* FCLASS.D */
+                    insn->type = insn_fclass_d;
+                    return;
+                default: unreachable();
+                }
+            }
+            unreachable();
+            case 0x78: /* FMV_W_X */
+                assert(RS2(data) == 0 && FUNCT3(data) == 0);
+                insn->type = insn_fmv_w_x;
+                return;
+            case 0x79: /* FMV_D_X */
+                assert(RS2(data) == 0 && FUNCT3(data) == 0);
+                insn->type = insn_fmv_d_x;
+                return;
             default: unreachable();
             }
         }

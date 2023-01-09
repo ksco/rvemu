@@ -5,7 +5,7 @@ OBJS=$(SRCS:.c=.o)
 CC=clang
 
 rvemu: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -lm -o $@ $^ $(LDFLAGS)
 
 $(OBJS): $(HDRS)
 

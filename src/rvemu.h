@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -38,18 +39,37 @@ enum insn_type_t {
     insn_beq, insn_bne, insn_blt, insn_bge, insn_bltu, insn_bgeu,
     insn_jalr, insn_jal, insn_ecall,
     insn_csrrs, insn_csrrsi,
+    insn_flw, insn_fsw,
+    insn_fmadd_s, insn_fmsub_s, insn_fnmsub_s, insn_fnmadd_s, insn_fadd_s, insn_fsub_s, insn_fmul_s, insn_fdiv_s, insn_fsqrt_s,
+    insn_fsgnj_s, insn_fsgnjn_s, insn_fsgnjx_s,
+    insn_fmin_s, insn_fmax_s,
+    insn_fcvt_w_s, insn_fcvt_wu_s, insn_fmv_x_w,
+    insn_feq_s, insn_flt_s, insn_fle_s, insn_fclass_s,
+    insn_fcvt_s_w, insn_fcvt_s_wu, insn_fmv_w_x, insn_fcvt_l_s, insn_fcvt_lu_s,
+    insn_fcvt_s_l, insn_fcvt_s_lu,
+    insn_fld, insn_fsd,
+    insn_fmadd_d, insn_fmsub_d, insn_fnmsub_d, insn_fnmadd_d,
+    insn_fadd_d, insn_fsub_d, insn_fmul_d, insn_fdiv_d, insn_fsqrt_d,
+    insn_fsgnj_d, insn_fsgnjn_d, insn_fsgnjx_d,
+    insn_fmin_d, insn_fmax_d,
+    insn_fcvt_s_d, insn_fcvt_d_s,
+    insn_feq_d, insn_flt_d, insn_fle_d, insn_fclass_d,
+    insn_fcvt_w_d, insn_fcvt_wu_d, insn_fcvt_d_w, insn_fcvt_d_wu,
+    insn_fcvt_l_d, insn_fcvt_lu_d,
+    insn_fmv_x_d, insn_fcvt_d_l, insn_fcvt_d_lu, insn_fmv_d_x,
     num_insns,
 };
 
 typedef struct {
-    i8  rd;
-    i8  rs1;
-    i8  rs2;
+    i8 rd;
+    i8 rs1;
+    i8 rs2;
+    i8 rs3;
+    i32 imm;
+    i16 csr;
+    enum insn_type_t type;
     bool rvc;
     bool cont;
-    i16 csr;
-    i32 imm;
-    enum insn_type_t type;
 } insn_t;
 
 /**
@@ -171,7 +191,7 @@ typedef struct {
     enum exit_reason_t exit_reason;
     u64 reenter_pc;
     u64 gp_regs[num_gp_regs];
-    u64 fp_regs[32];
+    fp_reg_t fp_regs[num_fp_regs];
     u64 pc;
     u8 *mem;
     u32 fcsr;
