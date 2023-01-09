@@ -472,7 +472,6 @@ void exec_block_interp(state_t *state) {
         u32 data = *(u32 *)(state->mem + state->pc);
         machine_decode(data, &insn);
 
-        state->gp_regs[zero] = 0;
         funcs[insn.type](state, &insn);
         state->gp_regs[zero] = 0;
 
