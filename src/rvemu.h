@@ -136,6 +136,7 @@ inline u64 mmu_alloc(mmu_t *mmu, size_t sz) {
 
 typedef struct {
     u64 pc;
+    u64 hot;
     u64 offset;
 } cache_item_t;
 
@@ -148,11 +149,13 @@ typedef struct {
 cache_t *new_cache();
 u8 *cache_lookup(cache_t *, u64);
 u8 *cache_add(cache_t *, u64, u8 *, size_t);
+bool cache_hot(cache_t *, u64);
 
 /**
  * state.c
 */
 enum exit_reason_t {
+    none,
     indirect_branch,
     ecall,
 };
@@ -184,6 +187,8 @@ typedef struct {
     cache_t *cache;
 } machine_t;
 
+typedef void (*exec_block_func_t)(state_t *);
+
 inline u64 machine_get_gp_reg(machine_t *m, i32 reg) {
     assert(reg >= 0 && reg <= num_gp_regs);
     return m->state.gp_regs[reg];
@@ -199,6 +204,11 @@ str_t machine_genblock(machine_t *);
 u8 *machine_compile(machine_t *, str_t);
 enum exit_reason_t machine_step(machine_t *);
 void machine_load_program(machine_t *, char*);
+
+/**
+ * interp.c
+*/
+void exec_block_interp(state_t *);
 
 /**
  * set.c
@@ -218,4 +228,4 @@ void set_reset(set_t *);
  * decode.c
 */
 
-void machine_decode(machine_t *, u64, insn_t *);
+void machine_decode(u32, insn_t *);

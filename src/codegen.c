@@ -211,7 +211,7 @@ static str_t func_ori(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u
 }
 
 static str_t func_andi(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    FUNC((sprintf(funcbuf2, "rs1 & %ldLL", (i64)insn->imm)));
+    FUNC((sprintf(funcbuf2, "rs1 & %luULL", (i64)insn->imm)));
 }
 
 #undef FUNC
@@ -370,7 +370,7 @@ static str_t func_divuw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
 }
 
 static str_t func_remw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    FUNC("(rs2 == 0 ? (int64_t)(int32_t)rs1 : (int64_t)((int32_t)rs1 % (int32_t)rs2))");
+    FUNC("(rs2 == 0 ? (int64_t)(int32_t)rs1 : (int64_t)(int32_t)((int64_t)(int32_t)rs1 % (int64_t)(int32_t)rs2))");
 }
 
 static str_t func_remuw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
@@ -492,7 +492,7 @@ static str_t func_jalr(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, 
 }
 
 static str_t func_jal(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    u64 return_addr = pc + 4;
+    u64 return_addr = pc + (insn->rvc ? 2 : 4);
     u64 target_addr = pc + (i64)insn->imm;
 
     REG_SET_VAL(insn->rd, return_addr);
@@ -559,7 +559,7 @@ static str_t func_csrrsi(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack
 
 typedef str_t (func_t)(str_t, insn_t *, tracer_t *, stack_t *, u64);
 
-func_t *funcs[] = {
+static func_t *funcs[] = {
     func_lb,
     func_lh,
     func_lw,
@@ -631,6 +631,7 @@ func_t *funcs[] = {
 
 #define CODEGEN_PROLOGUE                                \
     "enum exit_reason_t {                           \n" \
+    "   none,                                       \n" \
     "   indirect_branch,                            \n" \
     "   ecall,                                      \n" \
     "};                                             \n" \
@@ -674,7 +675,8 @@ str_t machine_genblock(machine_t *m) {
         sprintf(buf, "insn_%lx: {\n", pc);
         body = str_append(body, buf);
 
-        machine_decode(m, pc, &insn);
+        u32 data = mmu_read32(&m->mmu, pc);
+        machine_decode(data, &insn);
         body = funcs[insn.type](body, &insn, &tracer, &stack, pc);
 
         if (insn.cont) continue;

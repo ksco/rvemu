@@ -1,7 +1,5 @@
 #include "rvemu.h"
 
-typedef void (*func_t)(state_t *);
-
 void machine_setup(machine_t *m, int argc, char *argv[]) {
     size_t stack_size = 32 * 1024;
     u64 stack = mmu_alloc(&m->mmu, stack_size);
@@ -26,14 +24,25 @@ void machine_setup(machine_t *m, int argc, char *argv[]) {
 
 enum exit_reason_t machine_step(machine_t *m) {
     while(true) {
+        bool hot = true;
+
         u8 *code = cache_lookup(m->cache, m->state.pc);
         if (code == NULL) {
-            str_t source = machine_genblock(m);
-            code = machine_compile(m, source);
+            hot = cache_hot(m->cache, m->state.pc);
+            if (hot) {
+                str_t source = machine_genblock(m);
+                code = machine_compile(m, source);
+            }
+        }
+
+        if (!hot) {
+            code = (u8 *)exec_block_interp;
         }
 
         while (true) {
-            ((func_t)code)(&m->state);
+            m->state.exit_reason = none;
+            ((exec_block_func_t)code)(&m->state);
+            assert(m->state.exit_reason != none);
 
             if (m->state.exit_reason == indirect_branch) {
                 code = cache_lookup(m->cache, m->state.reenter_pc);

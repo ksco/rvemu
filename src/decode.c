@@ -335,8 +335,7 @@ static inline insn_t insn_ciwtype_read(u16 data) {
     };
 }
 
-void machine_decode(machine_t *m, u64 pc, insn_t *insn) {
-    u32 data = mmu_read32(&m->mmu, pc);
+void machine_decode(u32 data, insn_t *insn) {
     u32 quadrant = QUADRANT(data);
     switch (quadrant) {
     case 0x0: {
