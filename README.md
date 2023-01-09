@@ -1,6 +1,6 @@
 # rvemu
 
-rvemu is a fast Linux emulator, which can run statically linked RV64GC programs at near-native speed.
+rvemu is a fast Linux emulator, which can run statically linked RV64GC programs.
 
 Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learning how a JIT emulator works.
 
@@ -8,8 +8,8 @@ Based on this project, PLCT Lab plans to launch an open course "Implementing a J
 
 ## Features
 
-1. Fast, much faster than QEMU.
-2. Runs on all architectures.
+1. Fast, close to native speed in some cases.
+2. Platform independent, runs on all architectures.
 3. Tiny, and easy to understand.
 
 ## TODOs
