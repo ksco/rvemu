@@ -1,6 +1,6 @@
 #include "rvemu.h"
 
-inline uint64_t mulhu(uint64_t a, uint64_t b) {
+static inline uint64_t mulhu(uint64_t a, uint64_t b) {
     uint64_t t;
     uint32_t y1, y2, y3;
     uint64_t a0 = (uint32_t)a, a1 = a >> 32;
@@ -16,16 +16,98 @@ inline uint64_t mulhu(uint64_t a, uint64_t b) {
     return ((uint64_t)y3 << 32) | y2;
 }
 
-inline int64_t mulh(int64_t a, int64_t b) {
+static inline int64_t mulh(int64_t a, int64_t b) {
     int negate = (a < 0) != (b < 0);
     uint64_t res = mulhu(a < 0 ? -a : a, b < 0 ? -b : b);
     return negate ? ~res + (a * b == 0) : res;
 }
 
-inline int64_t mulhsu(int64_t a, uint64_t b) {
+static inline int64_t mulhsu(int64_t a, uint64_t b) {
     int negate = a < 0;
     uint64_t res = mulhu(a < 0 ? -a : a, b);
     return negate ? ~res + (a * b == 0) : res;
+}
+
+#define F32_SIGN ((uint32_t)1 << 31)
+#define F64_SIGN ((uint64_t)1 << 63)
+
+static inline u32 fsgnj32(u32 a, u32 b, bool n, bool x) {
+    u32 v = x ? a : n ? F32_SIGN : 0;
+    return (a & ~F32_SIGN) | ((v ^ b) & F32_SIGN);
+}
+
+static inline u64 fsgnj64(u64 a, u64 b, bool n, bool x) {
+    u64 v = x ? a : n ? F64_SIGN : 0;
+    return (a & ~F64_SIGN) | ((v ^ b) & F64_SIGN);
+}
+
+union u32_f32 { u32 ui; f32 f; };
+union u64_f64 { u64 ui; f64 f; };
+
+#define signF32UI(a) ((bool) ((uint32_t) (a)>>31))
+#define expF32UI(a) ((int_fast16_t) ((a)>>23) & 0xFF)
+#define fracF32UI(a) ((a) & 0x007FFFFF)
+#define isNaNF32UI(a) (((~(a) & 0x7F800000) == 0) && ((a) & 0x007FFFFF))
+#define isSigNaNF32UI(uiA) ((((uiA) & 0x7FC00000) == 0x7F800000) && ((uiA) & 0x003FFFFF))
+
+#define signF64UI(a) ((bool) ((uint64_t) (a)>>63))
+#define expF64UI(a) ((int_fast16_t) ((a)>>52) & 0x7FF)
+#define fracF64UI(a) ((a) & UINT64_C(0x000FFFFFFFFFFFFF))
+#define isNaNF64UI(a) (((~(a) & UINT64_C(0x7FF0000000000000)) == 0) && ((a) & UINT64_C(0x000FFFFFFFFFFFFF)))
+#define isSigNaNF64UI(uiA) ((((uiA) & UINT64_C(0x7FF8000000000000)) == UINT64_C(0x7FF0000000000000)) && ((uiA) & UINT64_C(0x0007FFFFFFFFFFFF)))
+
+static u16 f32_classify(f32 a) {
+    union u32_f32 uA;
+    u32 uiA;
+
+    uA.f = a;
+    uiA = uA.ui;
+
+    u16 infOrNaN = expF32UI(uiA) == 0xFF;
+    u16 subnormalOrZero = expF32UI(uiA) == 0;
+    bool sign = signF32UI(uiA);
+    bool fracZero = fracF32UI(uiA) == 0;
+    bool isNaN = isNaNF32UI(uiA);
+    bool isSNaN = isSigNaNF32UI(uiA);
+
+    return
+        (sign && infOrNaN && fracZero)          << 0 |
+        (sign && !infOrNaN && !subnormalOrZero) << 1 |
+        (sign && subnormalOrZero && !fracZero)  << 2 |
+        (sign && subnormalOrZero && fracZero)   << 3 |
+        (!sign && infOrNaN && fracZero)          << 7 |
+        (!sign && !infOrNaN && !subnormalOrZero) << 6 |
+        (!sign && subnormalOrZero && !fracZero)  << 5 |
+        (!sign && subnormalOrZero && fracZero)   << 4 |
+        (isNaN &&  isSNaN)                       << 8 |
+        (isNaN && !isSNaN)                       << 9;
+}
+
+static u16 f64_classify(f64 a) {
+    union u64_f64 uA;
+    u64 uiA;
+
+    uA.f = a;
+    uiA = uA.ui;
+
+    u16 infOrNaN = expF64UI(uiA) == 0x7FF;
+    u16 subnormalOrZero = expF64UI(uiA) == 0;
+    bool sign = signF64UI(uiA);
+    bool fracZero = fracF64UI(uiA) == 0;
+    bool isNaN = isNaNF64UI(uiA);
+    bool isSNaN = isSigNaNF64UI(uiA);
+
+    return
+        (sign && infOrNaN && fracZero)          << 0 |
+        (sign && !infOrNaN && !subnormalOrZero) << 1 |
+        (sign && subnormalOrZero && !fracZero)  << 2 |
+        (sign && subnormalOrZero && fracZero)   << 3 |
+        (!sign && infOrNaN && fracZero)          << 7 |
+        (!sign && !infOrNaN && !subnormalOrZero) << 6 |
+        (!sign && subnormalOrZero && !fracZero)  << 5 |
+        (!sign && subnormalOrZero && fracZero)   << 4 |
+        (isNaN &&  isSNaN)                       << 8 |
+        (isNaN && !isSNaN)                       << 9;
 }
 
 static void func_empty(state_t *state, insn_t *insn) {}
@@ -356,43 +438,22 @@ static void func_ecall(state_t *state, insn_t *insn) {
     state->reenter_pc = state->pc + 4;
 }
 
-#define FUNC(expr)                                                      \
-    if (insn->rd) {                                                     \
-        switch (insn->csr) {                                            \
-        case fflags:                                                    \
-            state->gp_regs[insn->rd] = (u64)(state->fcsr & 0x1f);       \
-            break;                                                      \
-        case frm:                                                       \
-            state->gp_regs[insn->rd] = (u64)((state->fcsr & 0x7) >> 5); \
-            break;                                                      \
-        case fcsr:                                                      \
-            state->gp_regs[insn->rd] = (u64)(state->fcsr & 0xff);       \
-            break;                                                      \
-        default: fatal("unsupported csr");                              \
-        }                                                               \
-    }                                                                   \
-    if (insn->rs1 != 0) {                                               \
-        switch (insn->csr) {                                            \
-        case fflags:                                                    \
-            state->fcsr |= ((expr) & 0x1f);                             \
-            break;                                                      \
-        case frm:                                                       \
-            state->fcsr |= (((expr) & 0x7) << 5);                       \
-            break;                                                      \
-        case fcsr:                                                      \
-            state->fcsr |= ((expr) & 0xff);                             \
-            break;                                                      \
-        default: fatal("unsupported csr");                              \
-        }                                                               \
-    }                                                                   \
+#define FUNC()                         \
+    switch (insn->csr) {               \
+    case fflags:                       \
+    case frm:                          \
+    case fcsr:                         \
+        break;                         \
+    default: fatal("unsupported csr"); \
+    }                                  \
+    state->gp_regs[insn->rd] = 0;      \
 
-static void func_csrrs(state_t *state, insn_t *insn) {
-    FUNC(state->gp_regs[insn->rs1]);
-}
-
-static void func_csrrsi(state_t *state, insn_t *insn) {
-    FUNC(insn->rs1);
-}
+static void func_csrrw(state_t *state, insn_t *insn) { FUNC(); }
+static void func_csrrs(state_t *state, insn_t *insn) { FUNC(); }
+static void func_csrrc(state_t *state, insn_t *insn) { FUNC(); }
+static void func_csrrwi(state_t *state, insn_t *insn) { FUNC(); }
+static void func_csrrsi(state_t *state, insn_t *insn) { FUNC(); }
+static void func_csrrci(state_t *state, insn_t *insn) { FUNC(); }
 
 #undef FUNC
 
@@ -401,10 +462,12 @@ static void func_csrrsi(state_t *state, insn_t *insn) {
     state->fp_regs[insn->rd].v = *(typ *)(state->mem + addr); \
 
 static void func_flw(state_t *state, insn_t *insn) {
-    FUNC(u32);
+    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
+    state->fp_regs[insn->rd].v = *(u32 *)(state->mem + addr) | ((uint64_t)-1 << 32);
 }
 static void func_fld(state_t *state, insn_t *insn) {
-    FUNC(u64);
+    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
+    state->fp_regs[insn->rd].v = *(u64 *)(state->mem + addr);
 }
 
 #undef FUNC
@@ -427,7 +490,7 @@ static void func_fsd(state_t *state, insn_t *insn) {
     f32 rs1 = state->fp_regs[insn->rs1].f;    \
     f32 rs2 = state->fp_regs[insn->rs2].f;    \
     f32 rs3 = state->fp_regs[insn->rs3].f;    \
-    state->fp_regs[insn->rd].d = (f64)(expr); \
+    state->fp_regs[insn->rd].f = (f32)(expr); \
 
 static void func_fmadd_s(state_t *state, insn_t *insn) {
     FUNC(rs1 * rs2 + rs3);
@@ -448,9 +511,9 @@ static void func_fnmadd_s(state_t *state, insn_t *insn) {
 #undef FUNC
 
 #define FUNC(expr)                         \
-    f32 rs1 = state->fp_regs[insn->rs1].d; \
-    f32 rs2 = state->fp_regs[insn->rs2].d; \
-    f32 rs3 = state->fp_regs[insn->rs3].d; \
+    f64 rs1 = state->fp_regs[insn->rs1].d; \
+    f64 rs2 = state->fp_regs[insn->rs2].d; \
+    f64 rs3 = state->fp_regs[insn->rs3].d; \
     state->fp_regs[insn->rd].d = (expr);   \
 
 static void func_fmadd_d(state_t *state, insn_t *insn) {
@@ -471,7 +534,7 @@ static void func_fnmadd_d(state_t *state, insn_t *insn) {
 #define FUNC(expr)                                                 \
     f32 rs1 = state->fp_regs[insn->rs1].f;                         \
     __attribute__((unused)) f32 rs2 = state->fp_regs[insn->rs2].f; \
-    state->fp_regs[insn->rd].d = (f64)(expr);                      \
+    state->fp_regs[insn->rd].f = (f32)(expr);                      \
 
 static void func_fadd_s(state_t *state, insn_t *insn) {
     FUNC(rs1 + rs2);
@@ -493,11 +556,18 @@ static void func_fsqrt_s(state_t *state, insn_t *insn) {
     FUNC(sqrtf(rs1));
 }
 
+static void func_fmin_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 < rs2 ? rs1 : rs2);
+}
+static void func_fmax_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 > rs2 ? rs1 : rs2);
+}
+
 #undef FUNC
 
 #define FUNC(expr)                                                 \
-    f32 rs1 = state->fp_regs[insn->rs1].d;                         \
-    __attribute__((unused)) f32 rs2 = state->fp_regs[insn->rs2].d; \
+    f64 rs1 = state->fp_regs[insn->rs1].d;                         \
+    __attribute__((unused)) f64 rs2 = state->fp_regs[insn->rs2].d; \
     state->fp_regs[insn->rd].d = (expr);                           \
 
 static void func_fadd_d(state_t *state, insn_t *insn) {
@@ -520,55 +590,184 @@ static void func_fsqrt_d(state_t *state, insn_t *insn) {
     FUNC(sqrt(rs1));
 }
 
-static void func_fsgnj_s(state_t *state, insn_t *insn) {}
-static void func_fsgnjn_s(state_t *state, insn_t *insn) {}
-static void func_fsgnjx_s(state_t *state, insn_t *insn) {}
-static void func_fsgnj_d(state_t *state, insn_t *insn) {}
-static void func_fsgnjn_d(state_t *state, insn_t *insn) {}
-static void func_fsgnjx_d(state_t *state, insn_t *insn) {}
+static void func_fmin_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 < rs2 ? rs1 : rs2);
+}
 
-static void func_fmin_s(state_t *state, insn_t *insn) {}
-static void func_fmax_s(state_t *state, insn_t *insn) {}
-static void func_fmin_d(state_t *state, insn_t *insn) {}
-static void func_fmax_d(state_t *state, insn_t *insn) {}
+static void func_fmax_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 > rs2 ? rs1 : rs2);
+}
 
-static void func_fcvt_w_s(state_t *state, insn_t *insn) {}
-static void func_fcvt_wu_s(state_t *state, insn_t *insn) {}
-static void func_fcvt_w_d(state_t *state, insn_t *insn) {}
-static void func_fcvt_wu_d(state_t *state, insn_t *insn) {}
+#undef FUNC
 
-static void func_fcvt_s_w(state_t *state, insn_t *insn) {}
-static void func_fcvt_s_wu(state_t *state, insn_t *insn) {}
-static void func_fcvt_d_w(state_t *state, insn_t *insn) {}
-static void func_fcvt_d_wu(state_t *state, insn_t *insn) {}
+#define FUNC(n, x)                                                                    \
+    u32 rs1 = state->fp_regs[insn->rs1].w;                                            \
+    u32 rs2 = state->fp_regs[insn->rs2].w;                                            \
+    state->fp_regs[insn->rd].v = (u64)fsgnj32(rs1, rs2, n, x) | ((uint64_t)-1 << 32); \
 
-static void func_fmv_x_w(state_t *state, insn_t *insn) {}
-static void func_fmv_w_x(state_t *state, insn_t *insn) {}
-static void func_fmv_x_d(state_t *state, insn_t *insn) {}
-static void func_fmv_d_x(state_t *state, insn_t *insn) {}
+static void func_fsgnj_s(state_t *state, insn_t *insn) {
+    FUNC(false, false);
+}
 
-static void func_feq_s(state_t *state, insn_t *insn) {}
-static void func_flt_s(state_t *state, insn_t *insn) {}
-static void func_fle_s(state_t *state, insn_t *insn) {}
-static void func_feq_d(state_t *state, insn_t *insn) {}
-static void func_flt_d(state_t *state, insn_t *insn) {}
-static void func_fle_d(state_t *state, insn_t *insn) {}
+static void func_fsgnjn_s(state_t *state, insn_t *insn) {
+    FUNC(true, false);
+}
 
-static void func_fclass_s(state_t *state, insn_t *insn) {}
-static void func_fclass_d(state_t *state, insn_t *insn) {}
+static void func_fsgnjx_s(state_t *state, insn_t *insn) {
+    FUNC(false, true);
+}
 
-static void func_fcvt_l_s(state_t *state, insn_t *insn) {}
-static void func_fcvt_lu_s(state_t *state, insn_t *insn) {}
-static void func_fcvt_l_d(state_t *state, insn_t *insn) {}
-static void func_fcvt_lu_d(state_t *state, insn_t *insn) {}
+#undef FUNC
 
-static void func_fcvt_s_l(state_t *state, insn_t *insn) {}
-static void func_fcvt_s_lu(state_t *state, insn_t *insn) {}
-static void func_fcvt_d_l(state_t *state, insn_t *insn) {}
-static void func_fcvt_d_lu(state_t *state, insn_t *insn) {}
+#define FUNC(n, x)                                        \
+    u64 rs1 = state->fp_regs[insn->rs1].v;                \
+    u64 rs2 = state->fp_regs[insn->rs2].v;                \
+    state->fp_regs[insn->rd].v = fsgnj64(rs1, rs2, n, x); \
 
-static void func_fcvt_s_d(state_t *state, insn_t *insn) {}
-static void func_fcvt_d_s(state_t *state, insn_t *insn) {}
+static void func_fsgnj_d(state_t *state, insn_t *insn) {
+    FUNC(false, false);
+}
+static void func_fsgnjn_d(state_t *state, insn_t *insn) {
+    FUNC(true, false);
+}
+static void func_fsgnjx_d(state_t *state, insn_t *insn) {
+    FUNC(false, true);
+}
+
+#undef FUNC
+
+static void func_fcvt_w_s(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)(i32)llrintf(state->fp_regs[insn->rs1].f);
+}
+
+static void func_fcvt_wu_s(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)(i32)(u32)llrintf(state->fp_regs[insn->rs1].f);
+}
+
+static void func_fcvt_w_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)(i32)llrint(state->fp_regs[insn->rs1].d);
+}
+
+static void func_fcvt_wu_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)(i32)(u32)llrint(state->fp_regs[insn->rs1].d);
+}
+
+static void func_fcvt_s_w(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].f = (f32)(i32)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_s_wu(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].f = (f32)(u32)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_d_w(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].d = (f64)(i32)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_d_wu(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].d = (f64)(u32)state->gp_regs[insn->rs1];
+}
+
+static void func_fmv_x_w(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)(i32)state->fp_regs[insn->rs1].w;
+}
+static void func_fmv_w_x(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].w = (u32)state->gp_regs[insn->rs1];
+}
+
+static void func_fmv_x_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = state->fp_regs[insn->rs1].v;
+}
+
+static void func_fmv_d_x(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].v = state->gp_regs[insn->rs1];
+}
+
+#define FUNC(expr)                         \
+    f32 rs1 = state->fp_regs[insn->rs1].f; \
+    f32 rs2 = state->fp_regs[insn->rs2].f; \
+    state->gp_regs[insn->rd] = (expr);     \
+
+static void func_feq_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 == rs2);
+}
+
+static void func_flt_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 < rs2);
+}
+
+static void func_fle_s(state_t *state, insn_t *insn) {
+    FUNC(rs1 <= rs2);
+}
+
+#undef FUNC
+
+#define FUNC(expr)                         \
+    f64 rs1 = state->fp_regs[insn->rs1].d; \
+    f64 rs2 = state->fp_regs[insn->rs2].d; \
+    state->gp_regs[insn->rd] = (expr);     \
+
+static void func_feq_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 == rs2);
+}
+
+static void func_flt_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 < rs2);
+}
+
+static void func_fle_d(state_t *state, insn_t *insn) {
+    FUNC(rs1 <= rs2);
+}
+
+#undef FUNC
+
+static void func_fclass_s(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = f32_classify(state->fp_regs[insn->rs1].f);
+}
+
+static void func_fclass_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = f64_classify(state->fp_regs[insn->rs1].d);
+}
+
+static void func_fcvt_l_s(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)llrintf(state->fp_regs[insn->rs1].f);
+}
+
+static void func_fcvt_lu_s(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (u64)llrintf(state->fp_regs[insn->rs1].f);
+}
+
+static void func_fcvt_l_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (i64)llrint(state->fp_regs[insn->rs1].d);
+}
+
+static void func_fcvt_lu_d(state_t *state, insn_t *insn) {
+    state->gp_regs[insn->rd] = (u64)llrint(state->fp_regs[insn->rs1].d);
+}
+
+static void func_fcvt_s_l(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].f = (f32)(i64)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_s_lu(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].f = (f32)(u64)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_d_l(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].d = (f64)(i64)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_d_lu(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].d = (f64)(u64)state->gp_regs[insn->rs1];
+}
+
+static void func_fcvt_s_d(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].f = (f32)state->fp_regs[insn->rs1].d;
+}
+
+static void func_fcvt_d_s(state_t *state, insn_t *insn) {
+    state->fp_regs[insn->rd].d = (f64)state->fp_regs[insn->rs1].f;
+}
 
 typedef void (func_t)(state_t *, insn_t *);
 
@@ -638,8 +837,12 @@ static func_t *funcs[] = {
     func_jalr,
     func_jal,
     func_ecall,
+    func_csrrw,
     func_csrrs,
+    func_csrrc,
+    func_csrrwi,
     func_csrrsi,
+    func_csrrci,
     func_flw,
     func_fsw,
     func_fmadd_s,

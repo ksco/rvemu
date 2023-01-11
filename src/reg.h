@@ -19,6 +19,7 @@ enum fp_reg_type_t {
 
 typedef union {
     u64 v;
+    u32 w;
     f64 d;
     f32 f;
 } fp_reg_t;

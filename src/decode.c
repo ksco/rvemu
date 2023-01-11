@@ -1282,11 +1282,23 @@ void machine_decode(u32 data, insn_t *insn) {
             u32 funct3 = FUNCT3(data);
             *insn = insn_csrtype_read(data);
             switch(funct3) {
+            case 0x1: /* CSRRW */
+                insn->type = insn_csrrw;
+                return;
             case 0x2: /* CSRRS */
                 insn->type = insn_csrrs;
                 return;
+            case 0x3: /* CSRRC */
+                insn->type = insn_csrrc;
+                return;
+            case 0x5: /* CSRRWI */
+                insn->type = insn_csrrwi;
+                return;
             case 0x6: /* CSRRSI */
                 insn->type = insn_csrrsi;
+                return;
+            case 0x7: /* CSRRCI */
+                insn->type = insn_csrrci;
                 return;
             default: unreachable();
             }

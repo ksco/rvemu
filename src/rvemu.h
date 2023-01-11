@@ -38,7 +38,7 @@ enum insn_type_t {
     insn_addw, insn_sllw, insn_srlw, insn_mulw, insn_divw, insn_divuw, insn_remw, insn_remuw, insn_subw, insn_sraw,
     insn_beq, insn_bne, insn_blt, insn_bge, insn_bltu, insn_bgeu,
     insn_jalr, insn_jal, insn_ecall,
-    insn_csrrs, insn_csrrsi,
+    insn_csrrc, insn_csrrci, insn_csrrs, insn_csrrsi, insn_csrrw, insn_csrrwi,
     insn_flw, insn_fsw,
     insn_fmadd_s, insn_fmsub_s, insn_fnmsub_s, insn_fnmadd_s, insn_fadd_s, insn_fsub_s, insn_fmul_s, insn_fdiv_s, insn_fsqrt_s,
     insn_fsgnj_s, insn_fsgnjn_s, insn_fsgnjx_s,
@@ -194,7 +194,6 @@ typedef struct {
     fp_reg_t fp_regs[num_fp_regs];
     u64 pc;
     u8 *mem;
-    u32 fcsr;
 } state_t;
 
 void state_print_regs(state_t *);
