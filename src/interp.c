@@ -200,7 +200,7 @@ static void func_srliw(state_t *state, insn_t *insn) {
 }
 
 static void func_sraiw(state_t *state, insn_t *insn) {
-    FUNC((i64)((i32)rs1 + (imm & 0x1f)));
+    FUNC((i64)((i32)rs1 >> (imm & 0x1f)));
 }
 
 #undef FUNC
