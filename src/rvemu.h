@@ -126,6 +126,7 @@ typedef struct {
     u64 entry;
     u64 alloc;
     u64 cap;
+    u64 base;
 } mmu_t;
 
 void mmu_load_elf(mmu_t *, int, off_t);
@@ -138,12 +139,12 @@ inline u32 mmu_read32(mmu_t *mmu, u64 addr) {
     return *(u32 *)(mmu->mem + addr);
 }
 
-inline u64 mmu_alloc(mmu_t *mmu, size_t sz) {
+inline u64 mmu_alloc(mmu_t *mmu, i64 sz) {
     u64 base = mmu->alloc;
-    assert(base < mmu->cap);
+    assert(base < mmu->cap && base >= mmu->base);
 
     mmu->alloc += sz;
-    assert(mmu->alloc <= mmu->cap);
+    assert(mmu->alloc <= mmu->cap && mmu->alloc >= mmu->base);
 
     return base;
 }

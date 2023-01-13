@@ -69,14 +69,16 @@ int main(int argc, char *argv[]) {
                 machine_set_gp_reg(&machine, a0, gettimeofday(tv, tz));
             }
             break;
-            case 214: { /* SBRK */
-                int incr = machine_get_gp_reg(&machine, a0);
-                assert(incr >= 0);
-                u64 base = mmu_alloc(&machine.mmu, incr);
-                machine_set_gp_reg(&machine, a0, base);
+            case 214: { /* BRK */
+                u64 addr = machine_get_gp_reg(&machine, a0);
+                if (addr == 0) addr = machine.mmu.alloc;
+                assert(addr >= machine.mmu.base);
+                i64 incr = (i64)addr - machine.mmu.alloc;
+                mmu_alloc(&machine.mmu, incr);
+                machine_set_gp_reg(&machine, a0, addr);
             }
             break;
-            default: printf("%ld\n", syscall); fatal("handle syscall");
+            default: fatal("unknown syscall");
             }
         }
         break;
