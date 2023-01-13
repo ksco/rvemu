@@ -7,7 +7,7 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 ## Features
 
 1. Fast.
-2. Platform independent, runs on all architectures.
+2. Platform independent, but only tested it under x86_64 so far.
 3. Tiny, and easy to understand.
 4. Targeting RV64IMFDC w/ Newlib (only a small subset of syscalls is implemented).
 
