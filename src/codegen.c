@@ -1,20 +1,8 @@
 #include "rvemu.h"
-#include "codegen_util.h"
-
-enum utils_t {
-    mulhu,
-    mulh,
-    mulhsu,
-    mathh,
-    f32_classify,
-    f64_classify,
-    num_utils,
-};
 
 typedef struct {
     bool gp_reg[num_gp_regs];
     bool fp_reg[num_fp_regs];
-    bool util[num_utils];
 } tracer_t;
 
 static void tracer_reset(tracer_t *t) {
@@ -33,35 +21,11 @@ static void tracer_reset(tracer_t *t) {
 
 DEFINE_TRACE_USAGE(gp_reg);
 DEFINE_TRACE_USAGE(fp_reg);
-DEFINE_TRACE_USAGE(util);
-
-static str_t tracer_append_utils(tracer_t *t, str_t s) {
-    if (t->util[mulhu] || t->util[mulh] || t->util[mulhsu]) {
-        s = str_append(s, CODEGEN_UTIL_MULHU);
-    }
-    if (t->util[mulh]) {
-        s = str_append(s, CODEGEN_UTIL_MULH);
-    }
-    if (t->util[mulhsu]) {
-        s = str_append(s, CODEGEN_UTIL_MULHSU);
-    }
-    if (t->util[mathh]) {
-        s = str_append(s, CODEGEN_UTIL_MATHH);
-    }
-    if (t->util[f32_classify]) {
-        s = str_append(s, CODEGEN_UTIL_F32_CLASSIFY);
-    }
-    if (t->util[f64_classify]) {
-        s = str_append(s, CODEGEN_UTIL_F64_CLASSIFY);
-    }
-
-    return s;
-}
 
 static str_t tracer_append_prologue(tracer_t *t, str_t s) {
     static char buf[128] = {0};
 
-    for (int i = 0; i < num_gp_regs; i++) {
+    for (int i = 1; i < num_gp_regs; i++) {
         if (!t->gp_reg[i]) continue;
         sprintf(buf, "    uint64_t x%d = state->gp_regs[%d];\n", i, i);
         s = str_append(s, buf);
@@ -79,7 +43,7 @@ static str_t tracer_append_prologue(tracer_t *t, str_t s) {
 static str_t tracer_append_epilogue(tracer_t *t, str_t s) {
     static char buf[128] = {0};
 
-    for (int i = 0; i < num_gp_regs; i++) {
+    for (int i = 1; i < num_gp_regs; i++) {
         if (!t->gp_reg[i]) continue;
         sprintf(buf, "    state->gp_regs[%d] = x%d;\n", i, i);
         s = str_append(s, buf);
@@ -313,21 +277,6 @@ static str_t func_mul(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u
     FUNC("rs1 * rs2");
 }
 
-static str_t func_mulh(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    tracer_add_util_usage(tracer, mulh, -1);
-    FUNC("mulh(rs1, rs2)");
-}
-
-static str_t func_mulhsu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    tracer_add_util_usage(tracer, mulhsu, -1);
-    FUNC("mulhsu(rs1, rs2)");
-}
-
-static str_t func_mulhu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    tracer_add_util_usage(tracer, mulhu, -1);
-    FUNC("mulhu(rs1, rs2)");
-}
-
 static str_t func_sub(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC(("rs1 - rs2"));
 }
@@ -509,19 +458,19 @@ static str_t func_ecall(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
     return s;
 }
 
-#define FUNC()                                    \
-    switch (insn->csr) {                          \
-    case fflags:                                  \
-    case frm:                                     \
-    case fcsr:                                    \
-        break;                                    \
-    default: fatal("unsupported csr");            \
-    }                                             \
-    if (insn->rd) {                               \
-        sprintf(funcbuf, "x%d = 0;\n", insn->rd); \
-        s = str_append(s, funcbuf);               \
-    }                                             \
-    return s;                                     \
+#define FUNC()                                        \
+    switch (insn->csr) {                              \
+    case fflags:                                      \
+    case frm:                                         \
+    case fcsr:                                        \
+        break;                                        \
+    default: fatal("unsupported csr");                \
+    }                                                 \
+    if (insn->rd) {                                   \
+        sprintf(funcbuf, "    x%d = 0;\n", insn->rd); \
+        s = str_append(s, funcbuf);                   \
+    }                                                 \
+    return s;                                         \
 
 static str_t func_csrrw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC();
@@ -568,29 +517,76 @@ static str_t func_fld(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u
 
 #undef FUNC
 
+#define FUNC(typ)                                              \
+    REG_GET(insn->rs1, rs1);                                   \
+    FREG_GET(insn->rs2, rs2, uint64_t, v);                     \
+    sprintf(funcbuf2, "rs1 + (int64_t)%ldLL", (i64)insn->imm); \
+    MEM_STORE(funcbuf2, typ, rs2);                             \
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);            \
+    tracer_add_fp_reg_usage(tracer, insn->rs2, -1);            \
+    return s;                                                  \
+
 static str_t func_fsw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("uint32_t");
 }
 
 static str_t func_fsd(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("uint64_t");
 }
 
+#undef FUNC
+
+#define FUNC(expr)                                                                  \
+    FREG_GET(insn->rs1, rs1, float, f);                                             \
+    FREG_GET(insn->rs2, rs2, float, f);                                             \
+    FREG_GET(insn->rs3, rs3, float, f);                                             \
+    FREG_SET_EXPR(insn->rd, expr, f);                                               \
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rs2, insn->rs3, insn->rd, -1); \
+    return s;                                                                       \
+
 static str_t func_fmadd_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 * rs2 + rs3");
 }
 
 static str_t func_fmsub_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 * rs2 - rs3");
 }
 
 static str_t func_fnmsub_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("-(rs1 * rs2) + rs3");
 }
 
 static str_t func_fnmadd_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("-(rs1 * rs2) - rs3");
 }
+
+#undef FUNC
+
+#define FUNC(expr)                                                                   \
+    FREG_GET(insn->rs1, rs1, double, d);                                             \
+    FREG_GET(insn->rs2, rs2, double, d);                                             \
+    FREG_GET(insn->rs3, rs3, double, d);                                             \
+    FREG_SET_EXPR(insn->rd, expr, d);                                                \
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rs2, insn->rs3, insn->rd, -1);  \
+    return s;                                                                        \
+
+static str_t func_fmadd_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("rs1 * rs2 + rs3");
+}
+
+static str_t func_fmsub_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("rs1 * rs2 - rs3");
+}
+
+static str_t func_fnmsub_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("-(rs1 * rs2) + rs3");
+}
+
+static str_t func_fnmadd_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("-(rs1 * rs2) - rs3");
+}
+
+#undef FUNC
 
 #define FUNC(expr)                                                       \
     FREG_GET(insn->rs1, rs1, float, f);                                  \
@@ -615,11 +611,6 @@ static str_t func_fdiv_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack
     FUNC("rs1 / rs2");
 }
 
-static str_t func_fsqrt_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    FUNC("sqrtf(rs1)");
-    tracer_add_util_usage(tracer, mathh, -1);
-}
-
 static str_t func_fmin_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC("rs1 < rs2 ? rs1 : rs2");
 }
@@ -630,24 +621,36 @@ static str_t func_fmax_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack
 
 #undef FUNC
 
-static str_t func_fsgnj_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+static str_t func_fcvt_s_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(float)(int32_t)rs1", f);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
-static str_t func_fsgnjn_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+static str_t func_fcvt_s_wu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(float)(uint32_t)rs1", f);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
-static str_t func_fsgnjx_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+static str_t func_fcvt_d_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(double)(int32_t)rs1", d);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
-static str_t func_fcvt_w_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_wu_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+static str_t func_fcvt_d_wu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(double)(uint32_t)rs1", d);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
 static str_t func_fmv_x_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
@@ -661,6 +664,23 @@ static str_t func_fmv_x_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stac
 static str_t func_fmv_w_x(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     REG_GET(insn->rs1, rs1);
     FREG_SET_EXPR(insn->rd, "(uint32_t)rs1", w);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
+}
+
+static str_t func_fmv_x_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FREG_GET(insn->rs1, rs1, uint64_t, v);
+    REG_SET_EXPR(insn->rd, "rs1");
+    tracer_add_gp_reg_usage(tracer, insn->rd, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rs1, -1);
+    return s;
+}
+
+
+static str_t func_fmv_d_x(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "rs1", v);
     tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
     tracer_add_fp_reg_usage(tracer, insn->rd, -1);
     return s;
@@ -710,151 +730,179 @@ static str_t func_fle_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
 
 #undef FUNC
 
-static str_t func_fclass_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    FREG_GET(insn->rs1, rs1, float, f);
-    REG_SET_EXPR(insn->rd, "f32_classify(rs1)");
-    tracer_add_gp_reg_usage(tracer, insn->rd, -1);
-    tracer_add_fp_reg_usage(tracer, insn->rs1, -1);
-    tracer_add_util_usage(tracer, f32_classify, -1);
-    return s;
-}
-
-static str_t func_fclass_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    FREG_GET(insn->rs1, rs1, double, d);
-    REG_SET_EXPR(insn->rd, "f64_classify(rs1)");
-    tracer_add_gp_reg_usage(tracer, insn->rd, -1);
-    tracer_add_fp_reg_usage(tracer, insn->rs1, -1);
-    tracer_add_util_usage(tracer, f64_classify, -1);
-    return s;
-}
-
-static str_t func_fcvt_s_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_s_wu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_l_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_lu_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
 static str_t func_fcvt_s_l(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(float)(int64_t)rs1", f);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
 static str_t func_fcvt_s_lu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(float)(uint64_t)rs1", f);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
-static str_t func_fmadd_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fmsub_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fnmsub_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fnmadd_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
+#define FUNC(expr)                                                       \
+    FREG_GET(insn->rs1, rs1, double, d);                                 \
+    FREG_GET(insn->rs2, rs2, double, d);                                 \
+    FREG_SET_EXPR(insn->rd, expr, d);                                    \
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rs2, insn->rd, -1); \
+    return s;                                                            \
 
 static str_t func_fadd_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 + rs2");
 }
 
 static str_t func_fsub_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 - rs2");
 }
 
 static str_t func_fmul_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 * rs2");
 }
 
 static str_t func_fdiv_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fsqrt_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fsgnj_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fsgnjn_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fsgnjx_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 / rs2");
 }
 
 static str_t func_fmin_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 < rs2 ? rs1 : rs2");
 }
 
 static str_t func_fmax_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FUNC("rs1 > rs2 ? rs1 : rs2");
 }
 
+#undef FUNC
+
 static str_t func_fcvt_s_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FREG_GET(insn->rs1, rs1, double, d);
+    FREG_SET_EXPR(insn->rd, "(float)rs1", f);
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rd, -1);
+    return s;
 }
 
 static str_t func_fcvt_d_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_w_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_wu_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_d_w(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_d_wu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_l_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fcvt_lu_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fmv_x_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    FREG_GET(insn->rs1, rs1, float, f);
+    FREG_SET_EXPR(insn->rd, "(double)rs1", d);
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rd, -1);
+    return s;
 }
 
 static str_t func_fcvt_d_l(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(double)(int64_t)rs1", d);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
 static str_t func_fcvt_d_lu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+    REG_GET(insn->rs1, rs1);
+    FREG_SET_EXPR(insn->rd, "(double)(uint64_t)rs1", d);
+    tracer_add_gp_reg_usage(tracer, insn->rs1, -1);
+    tracer_add_fp_reg_usage(tracer, insn->rd, -1);
+    return s;
 }
 
-static str_t func_fmv_d_x(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
+#define FUNC() \
+    s = str_append(s, "    state->exit_reason = interp;\n");   \
+    sprintf(funcbuf, "    state->reenter_pc = %luULL;\n", pc); \
+    s = str_append(s, funcbuf);                                \
+    s = str_append(s, "    goto end;\n");                      \
+    s = str_append(s, "}\n");                                  \
+    insn->cont = true;                                         \
+    return s;                                                  \
+
+static str_t func_mulh(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
 }
+
+static str_t func_mulhsu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_mulhu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsqrt_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_w_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_wu_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_w_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_wu_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fclass_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fclass_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_l_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_lu_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_l_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fcvt_lu_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnj_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnjn_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnjx_s(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnj_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnjn_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsgnjx_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+static str_t func_fsqrt_d(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC();
+}
+
+#undef FUNC
 
 typedef str_t (func_t)(str_t, insn_t *, tracer_t *, stack_t *, u64);
 
@@ -999,6 +1047,7 @@ static func_t *funcs[] = {
     "   none,                                       \n" \
     "   direct_branch,                              \n" \
     "   indirect_branch,                            \n" \
+    "   interp,                                     \n" \
     "   ecall,                                      \n" \
     "};                                             \n" \
     "typedef union {                                \n" \
@@ -1063,7 +1112,6 @@ str_t machine_genblock(machine_t *m) {
     DECLEAR_STATIC_STR(source);
     source = str_append(source, "#include <stdint.h>\n");
     source = str_append(source, "#include <stdbool.h>\n");
-    source = tracer_append_utils(&tracer, source);
     source = str_append(source, CODEGEN_PROLOGUE);
     source = tracer_append_prologue(&tracer, source);
     source = str_append(source, body);

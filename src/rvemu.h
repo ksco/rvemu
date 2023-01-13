@@ -179,6 +179,7 @@ enum exit_reason_t {
     none,
     direct_branch,
     indirect_branch,
+    interp,
     ecall,
 };
 

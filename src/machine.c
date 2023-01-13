@@ -50,6 +50,12 @@ enum exit_reason_t machine_step(machine_t *m) {
                 if (code != NULL) continue;
             }
 
+            if (m->state.exit_reason == interp) {
+                m->state.pc = m->state.reenter_pc;
+                code = (u8 *)exec_block_interp;
+                continue;
+            }
+
             break;
         }
 
