@@ -359,6 +359,10 @@ void machine_decode(u32 data, insn_t *insn) {
             insn->type = insn_addi;
             assert(insn->imm != 0);
             return;
+        case 0x1: /* C.FLD */
+            *insn = insn_cltype_read2(data);
+            insn->type = insn_fld;
+            return;
         case 0x2: /* C.LW */
             *insn = insn_cltype_read(data);
             insn->type = insn_lw;
@@ -366,6 +370,10 @@ void machine_decode(u32 data, insn_t *insn) {
         case 0x3: /* C.LD */
             *insn = insn_cltype_read2(data);
             insn->type = insn_ld;
+            return;
+        case 0x5: /* C.FSD */
+            *insn = insn_cstype_read(data);
+            insn->type = insn_fsd;
             return;
         case 0x6: /* C.SW */
             *insn = insn_cstype_read2(data);
@@ -375,7 +383,7 @@ void machine_decode(u32 data, insn_t *insn) {
             *insn = insn_cstype_read(data);
             insn->type = insn_sd;
             return;
-        default: fatal("unimplemented");
+        default: printf("data: %x\n", data); fatal("unimplemented");
         }
     }
     unreachable();
@@ -513,6 +521,11 @@ void machine_decode(u32 data, insn_t *insn) {
             insn->rs1 = insn->rd;
             insn->type = insn_slli;
             return;
+        case 0x1: /* C.FLDSP */
+            *insn = insn_citype_read2(data);
+            insn->rs1 = sp;
+            insn->type = insn_fld;
+            return;
         case 0x2: /* C.LWSP */
             *insn = insn_citype_read4(data);
             assert(insn->rd != 0);
@@ -564,6 +577,11 @@ void machine_decode(u32 data, insn_t *insn) {
             }
         }
         unreachable();
+        case 0x5: /* C.FSDSP */
+            *insn = insn_csstype_read(data);
+            insn->rs1 = sp;
+            insn->type = insn_fsd;
+            return;
         case 0x6: /* C.SWSP */
             *insn = insn_csstype_read2(data);
             insn->rs1 = sp;
