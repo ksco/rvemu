@@ -457,20 +457,14 @@ static void func_csrrci(state_t *state, insn_t *insn) { FUNC(); }
 
 #undef FUNC
 
-#define FUNC(typ)                                             \
-    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;    \
-    state->fp_regs[insn->rd].v = *(typ *)(state->mem + addr); \
-
 static void func_flw(state_t *state, insn_t *insn) {
     u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
-    state->fp_regs[insn->rd].v = *(u32 *)(state->mem + addr) | ((uint64_t)-1 << 32);
+    state->fp_regs[insn->rd].v = *(u32 *)(state->mem + addr) | ((u64)-1 << 32);
 }
 static void func_fld(state_t *state, insn_t *insn) {
     u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
     state->fp_regs[insn->rd].v = *(u64 *)(state->mem + addr);
 }
-
-#undef FUNC
 
 #define FUNC(typ)                                      \
     u64 rs1 = state->gp_regs[insn->rs1];               \

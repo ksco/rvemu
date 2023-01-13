@@ -9,6 +9,7 @@ enum utils_t {
 
 typedef struct {
     bool gp_reg[num_gp_regs];
+    bool fp_reg[num_fp_regs];
     bool util[num_utils];
 } tracer_t;
 
@@ -27,6 +28,7 @@ static void tracer_reset(tracer_t *t) {
     }                                                             \
 
 DEFINE_TRACE_USAGE(gp_reg);
+DEFINE_TRACE_USAGE(fp_reg);
 DEFINE_TRACE_USAGE(util);
 
 #define CODEGEN_UTIL_MULHU                               \
@@ -76,22 +78,35 @@ static str_t tracer_append_utils(tracer_t *t, str_t s) {
 
 static str_t tracer_append_prologue(tracer_t *t, str_t s) {
     static char buf[128] = {0};
-    for (int i = 1; i < num_gp_regs; i++) {
-        if (t->gp_reg[i]) {
-            sprintf(buf, "    uint64_t x%d = state->gp_regs[%d];\n", i, i);
-            s = str_append(s, buf);
-        }
+
+    for (int i = 0; i < num_gp_regs; i++) {
+        if (!t->gp_reg[i]) continue;
+        sprintf(buf, "    uint64_t x%d = state->gp_regs[%d];\n", i, i);
+        s = str_append(s, buf);
     }
+
+    for (int i = 0; i < num_fp_regs; i++) {
+        if (!t->fp_reg[i]) continue;
+        sprintf(buf, "    fp_reg_t f%d = state->fp_regs[%d];\n", i, i);
+        s = str_append(s, buf);
+    }
+
     return s;
 }
 
 static str_t tracer_append_epilogue(tracer_t *t, str_t s) {
     static char buf[128] = {0};
-    for (int i = 1; i < num_gp_regs; i++) {
-        if (t->gp_reg[i]) {
-            sprintf(buf, "    state->gp_regs[%d] = x%d;\n", i, i);
-            s = str_append(s, buf);
-        }
+
+    for (int i = 0; i < num_gp_regs; i++) {
+        if (!t->gp_reg[i]) continue;
+        sprintf(buf, "    state->gp_regs[%d] = x%d;\n", i, i);
+        s = str_append(s, buf);
+    }
+
+    for (int i = 0; i < num_fp_regs; i++) {
+        if (!t->fp_reg[i]) continue;
+        sprintf(buf, "    state->fp_regs[%d] = f%d;\n", i, i);
+        s = str_append(s, buf);
     }
 
     return s;
@@ -120,6 +135,13 @@ static char funcbuf2[128] = {0};
         s = str_append(s, funcbuf);                                 \
     }                                                               \
 
+#define FREG_SET_EXPR(reg, expr, field)                            \
+    sprintf(funcbuf, "    f%d." #field " = %s;\n", (reg), (expr)); \
+    s = str_append(s, funcbuf);                                    \
+
+#define FREG_GET(reg, name, field)                                         \
+    sprintf(funcbuf, "    uint64_t " #name " = f%d." #field ";\n", (reg)); \
+    s = str_append(s, funcbuf);                                            \
 
 #define MEM_LOAD(addr, typ, name)                                                              \
     sprintf(funcbuf, "    %s " #name " = *(%s *)(state->mem + %s);\n", (typ), (typ), (addr));  \
@@ -545,11 +567,29 @@ static str_t func_csrrci(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack
 
 #undef FUNC
 
+#define FUNC(typ, expr)                                        \
+    REG_GET(insn->rs1, rs1);                                   \
+    sprintf(funcbuf2, "rs1 + (int64_t)%ldLL", (i64)insn->imm); \
+    MEM_LOAD(funcbuf2, typ, rd);                               \
+    FREG_SET_EXPR(insn->rd, expr, v);                          \
+    tracer_add_fp_reg_usage(tracer, insn->rs1, insn->rd, -1);  \
+    return s;                                                  \
+
 static str_t func_flw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("uint32_t", "rd | ((uint64_t)-1 << 32)");
+}
+
+static str_t func_fld(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    FUNC("uint64_t", "rd");
+}
+
+#undef FUNC
+
+static str_t func_fsw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     fatal("unimplemented");
 }
 
-static str_t func_fsw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+static str_t func_fsd(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     fatal("unimplemented");
 }
 
@@ -662,14 +702,6 @@ static str_t func_fcvt_s_l(str_t s, insn_t *insn, tracer_t *tracer, stack_t *sta
 }
 
 static str_t func_fcvt_s_lu(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fld(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    fatal("unimplemented");
-}
-
-static str_t func_fsd(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     fatal("unimplemented");
 }
 
@@ -938,11 +970,17 @@ static func_t *funcs[] = {
     "   indirect_branch,                            \n" \
     "   ecall,                                      \n" \
     "};                                             \n" \
+    "typedef union {                                \n" \
+    "    uint64_t v;                                \n" \
+    "    uint32_t w;                                \n" \
+    "    double d;                                  \n" \
+    "    float f;                                   \n" \
+    "} fp_reg_t;                                    \n" \
     "typedef struct {                               \n" \
     "    enum exit_reason_t exit_reason;            \n" \
     "    uint64_t reenter_pc;                       \n" \
     "    uint64_t gp_regs[32];                      \n" \
-    "    uint64_t fp_regs[32];                      \n" \
+    "    fp_reg_t fp_regs[32];                      \n" \
     "    uint64_t pc;                               \n" \
     "    uint8_t *restrict mem;                     \n" \
     "    uint32_t fcsr;                             \n" \
