@@ -13,7 +13,7 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 ## TODOs
 
-- [ ] Implementing all RV64IMFDC instructions.
+- [x] Implementing all RV64IMFDC instructions.
 - [ ] Benchmark.
 - [ ] Run real-world programs, like Lua or GIT.
 - [ ] Memory mapped MMU.
