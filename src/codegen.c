@@ -214,23 +214,6 @@ static str_t func_andi(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, 
     FUNC((sprintf(funcbuf2, "rs1 & %luULL", (i64)insn->imm)));
 }
 
-#undef FUNC
-
-static str_t func_auipc(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
-    u64 val = pc + (i64)insn->imm;
-    REG_SET_VAL(insn->rd, val);
-
-    tracer_add_gp_reg_usage(tracer, insn->rd, -1);
-    return s;
-}
-
-#define FUNC(stmt)                                            \
-    REG_GET(insn->rs1, rs1);                                  \
-    stmt;                                                     \
-    REG_SET_EXPR(insn->rd, funcbuf2);                         \
-    tracer_add_gp_reg_usage(tracer, insn->rs1, insn->rd, -1); \
-    return s;                                                 \
-
 static str_t func_addiw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC((sprintf(funcbuf2, "(int64_t)(int32_t)(rs1 + (int64_t)%ldLL)", (i64)insn->imm)));
 }
@@ -248,6 +231,14 @@ static str_t func_sraiw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
 }
 
 #undef FUNC
+
+static str_t func_auipc(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
+    u64 val = pc + (i64)insn->imm;
+    REG_SET_VAL(insn->rd, val);
+
+    tracer_add_gp_reg_usage(tracer, insn->rd, -1);
+    return s;
+}
 
 #define FUNC(typ)                                              \
     REG_GET(insn->rs1, rs1);                                   \
@@ -514,17 +505,19 @@ static str_t func_ecall(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
     return s;
 }
 
-#define FUNC()                                \
-    switch (insn->csr) {                      \
-    case fflags:                              \
-    case frm:                                 \
-    case fcsr:                                \
-        break;                                \
-    default: fatal("unsupported csr");        \
-    }                                         \
-    sprintf(funcbuf, "x%d = 0;\n", insn->rd); \
-    s = str_append(s, funcbuf);               \
-    return s;                                 \
+#define FUNC()                                    \
+    switch (insn->csr) {                          \
+    case fflags:                                  \
+    case frm:                                     \
+    case fcsr:                                    \
+        break;                                    \
+    default: fatal("unsupported csr");            \
+    }                                             \
+    if (insn->rd) {                               \
+        sprintf(funcbuf, "x%d = 0;\n", insn->rd); \
+        s = str_append(s, funcbuf);               \
+    }                                             \
+    return s;                                     \
 
 static str_t func_csrrw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC();
