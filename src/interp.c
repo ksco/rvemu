@@ -42,19 +42,11 @@ static inline u64 fsgnj64(u64 a, u64 b, bool n, bool x) {
 }
 
 union u32_f32 { u32 ui; f32 f; };
-union u64_f64 { u64 ui; f64 f; };
-
 #define signF32UI(a) ((bool) ((uint32_t) (a)>>31))
 #define expF32UI(a) ((int_fast16_t) ((a)>>23) & 0xFF)
 #define fracF32UI(a) ((a) & 0x007FFFFF)
 #define isNaNF32UI(a) (((~(a) & 0x7F800000) == 0) && ((a) & 0x007FFFFF))
 #define isSigNaNF32UI(uiA) ((((uiA) & 0x7FC00000) == 0x7F800000) && ((uiA) & 0x003FFFFF))
-
-#define signF64UI(a) ((bool) ((uint64_t) (a)>>63))
-#define expF64UI(a) ((int_fast16_t) ((a)>>52) & 0x7FF)
-#define fracF64UI(a) ((a) & UINT64_C(0x000FFFFFFFFFFFFF))
-#define isNaNF64UI(a) (((~(a) & UINT64_C(0x7FF0000000000000)) == 0) && ((a) & UINT64_C(0x000FFFFFFFFFFFFF)))
-#define isSigNaNF64UI(uiA) ((((uiA) & UINT64_C(0x7FF8000000000000)) == UINT64_C(0x7FF0000000000000)) && ((uiA) & UINT64_C(0x0007FFFFFFFFFFFF)))
 
 static u16 f32_classify(f32 a) {
     union u32_f32 uA;
@@ -82,6 +74,13 @@ static u16 f32_classify(f32 a) {
         (isNaN &&  isSNaN)                       << 8 |
         (isNaN && !isSNaN)                       << 9;
 }
+
+union u64_f64 { u64 ui; f64 f; };
+#define signF64UI(a) ((bool) ((uint64_t) (a)>>63))
+#define expF64UI(a) ((int_fast16_t) ((a)>>52) & 0x7FF)
+#define fracF64UI(a) ((a) & UINT64_C(0x000FFFFFFFFFFFFF))
+#define isNaNF64UI(a) (((~(a) & UINT64_C(0x7FF0000000000000)) == 0) && ((a) & UINT64_C(0x000FFFFFFFFFFFFF)))
+#define isSigNaNF64UI(uiA) ((((uiA) & UINT64_C(0x7FF8000000000000)) == UINT64_C(0x7FF0000000000000)) && ((uiA) & UINT64_C(0x0007FFFFFFFFFFFF)))
 
 static u16 f64_classify(f64 a) {
     union u64_f64 uA;
