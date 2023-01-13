@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
