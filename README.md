@@ -15,6 +15,11 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 `rvemu` can only run under Linux at present, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
 
+## TODOs
+
+- [ ] Add more syscalls.
+- [ ] Consider using a mmaped MMU.
+
 ## Benchmark
 
 > All the tests is compiled with `riscv64-unknown-elf-gcc -O3` and runs on Intel Xeon Platinum 8269CY
