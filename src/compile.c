@@ -3,7 +3,6 @@
 #define BINBUF_CAP 64 * 1024
 
 static u8 elfbuf[BINBUF_CAP] = {0};
-static u8 *binbuf = elfbuf + sizeof(elf64_ehdr_t);
 
 u8 *machine_compile(machine_t *m, str_t source) {
     int saved_stdout = dup(STDOUT_FILENO);
@@ -14,20 +13,20 @@ u8 *machine_compile(machine_t *m, str_t source) {
     close(outp[1]);
 
     FILE *f;
-    f = popen(
-        "clang -O3 "
-#if defined(__x86_64__)
-        "-march=native "
-#endif
-        "-static -nostdlib -c -xc "
-        "-o /dev/stdout -", "w");
+    f = popen("clang -O3 -c -xc -o /dev/stdout -", "w");
     if (f == NULL) fatal("cannot compile program");
     fwrite(source, 1, str_len(source), f);
     pclose(f);
     fflush(stdout);
 
-    size_t binsz = read(outp[0], elfbuf, 64 * 1024) - sizeof(elf64_ehdr_t);
+    read(outp[0], elfbuf, BINBUF_CAP);
     dup2(saved_stdout, STDOUT_FILENO);
 
-    return cache_add(m->cache, m->state.pc, binbuf, binsz);
+    elf64_ehdr_t *ehdr = (elf64_ehdr_t *)elfbuf;
+
+    // .text section is always the third one
+    u64 shoff = ehdr->e_shoff + 2*sizeof(elf64_shdr_t);
+    elf64_shdr_t *shdr = (elf64_shdr_t *)(elfbuf + shoff);
+
+    return cache_add(m->cache, m->state.pc, elfbuf + shdr->sh_offset, shdr->sh_size);
 }
