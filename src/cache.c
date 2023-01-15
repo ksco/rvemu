@@ -12,7 +12,7 @@ cache_t *new_cache() {
 }
 
 #define MAX_SEARCH_COUNT 32
-#define CACHE_HOT_COUNT  32
+#define CACHE_HOT_COUNT  100000
 
 #define CACHE_IS_HOT (cache->table[index].hot >= CACHE_HOT_COUNT)
 
