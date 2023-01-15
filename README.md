@@ -7,7 +7,7 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 ## Features
 
 1. Faster than QEMU in most cases.
-2. Platform independent, but only tested it under x86_64 so far.
+2. Architecture independent, we've tested it under x86_64 and aarch64.
 3. Tiny, and easy to understand.
 4. Targeting RV64IMFDC w/ Newlib (only a small subset of syscalls is implemented).
 
