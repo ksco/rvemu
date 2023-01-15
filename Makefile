@@ -1,4 +1,4 @@
-CFLAGS=-O3 -Wall -Werror -Wimplicit-fallthrough -g
+CFLAGS=-O3 -Wall -Werror -Wimplicit-fallthrough
 SRCS=$(wildcard src/*.c)
 HDRS=$(wildcard src/*.h)
 OBJS=$(SRCS:.c=.o)
