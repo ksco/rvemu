@@ -1,5 +1,8 @@
 #include "rvemu.h"
 
+#define sys_icache_invalidate(addr, size) \
+  __builtin___clear_cache((char *)(addr), (char *)(addr) + (size));
+
 static u64 hash(u64 pc) {
     return pc % CACHE_ENTRY_SIZE;
 }
@@ -55,6 +58,7 @@ u8 *cache_add(cache_t *cache, u64 pc, u8 *code, size_t sz) {
     cache->table[index].pc = pc;
     cache->table[index].offset = cache->offset;
     cache->offset += sz;
+    sys_icache_invalidate(cache->jitcode + cache->table[index].offset, sz);
     return cache->jitcode + cache->table[index].offset;
 }
 
