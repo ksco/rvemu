@@ -11,6 +11,10 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 3. Tiny, and easy to understand.
 4. Targeting RV64IMFDC w/ Newlib (only a small subset of syscalls is implemented, adding more).
 
+## Usage
+
+`rvemu` can only run under Linux at present, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
+
 ## Benchmark
 
 > All the tests is compiled with `riscv64-unknown-elf-gcc -O3` and runs on Intel Xeon Platinum 8269CY
