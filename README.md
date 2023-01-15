@@ -22,7 +22,7 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 ## Notes
 
-1. `rvemu` uses `clang -O3` to generate target code. One interesting thing is that if you use `rvemu` to run unoptimized binaries, (such as those generated with `clang -O0`), you will get a huge performance boost, even much faster than the equivalent unoptimized native binaries.
+1. `rvemu` uses `clang -O3` to generate highly optimized target code.
 
 2. `rvemu` uses hardfloat technique to gain more performance, just like [NEMU](https://github.com/OpenXiangShan/NEMU), this actually violates the RISC-V standard, but it produces correct results in most cases, and it's way faster than softfloat.
 
