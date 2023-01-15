@@ -15,7 +15,10 @@ u8 *machine_compile(machine_t *m, str_t source) {
 
     FILE *f;
     f = popen(
-        "clang -O3 -march=native "
+        "clang -O3 "
+#if defined(__x86_64__)
+        "-march=native "
+#endif
         "-static -nostdlib -c -xc "
         "-o /dev/stdout -", "w");
     if (f == NULL) fatal("cannot compile program");
