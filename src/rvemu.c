@@ -29,16 +29,8 @@ int main(int argc, char *argv[]) {
                 i64 fd = machine_get_gp_reg(&machine, a0);
                 u64 ptr = machine_get_gp_reg(&machine, a1);
                 u64 len = machine_get_gp_reg(&machine, a2);
-                static char *buf = NULL;
-                if (buf) {
-                    buf = (char *)realloc(buf, len + 1);
-                } else {
-                    buf = (char *)malloc(len + 1);
-                }
-                buf[len] = 0;
-                memcpy(buf, (char *)(machine.mmu.mem + ptr), len);
                 FILE *f = fdopen(fd, "w");
-                fprintf(f, "%s", buf);
+                fprintf(f, "%.*s", (int)len, (char *)(machine.mmu.mem + ptr));
                 fflush(f);
                 machine_set_gp_reg(&machine, a0, len);
             }
