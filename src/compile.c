@@ -1,59 +1,30 @@
 #include "rvemu.h"
 
+#define BINBUF_CAP 64 * 1024
+
+static u8 elfbuf[BINBUF_CAP] = {0};
+static u8 *binbuf = elfbuf + sizeof(elf64_ehdr_t);
+
 u8 *machine_compile(machine_t *m, str_t source) {
-    static char name[] = "/tmp/rvemuXXXXXX";
+    int saved_stdout = dup(STDOUT_FILENO);
+    int outp[2];
 
-    // using `clang` to compile it to an ELF file.
-    DECLEAR_STATIC_STR(clang_str);
-
-    clang_str = str_append(clang_str,
-        "clang -O3 -march=native -static "
-        "-nostdlib "
-        "-xc -c -o ");
-    clang_str = str_append(clang_str, name);
-    clang_str = str_append(clang_str, ".obj - ");
+    if (pipe(outp) != 0) fatal("cannot make a pipe");
+    dup2(outp[1], STDOUT_FILENO);
+    close(outp[1]);
 
     FILE *f;
-    f = popen(clang_str, "w");
+    f = popen(
+        "clang -O3 -march=native "
+        "-static -nostdlib -c -xc "
+        "-o /dev/stdout -", "w");
     if (f == NULL) fatal("cannot compile program");
     fwrite(source, 1, str_len(source), f);
     pclose(f);
+    fflush(stdout);
 
-    // using `objcopy` to turn it into a binary
-    DECLEAR_STATIC_STR(objcopy_str);
+    size_t binsz = read(outp[0], elfbuf, 64 * 1024) - sizeof(elf64_ehdr_t);
+    dup2(saved_stdout, STDOUT_FILENO);
 
-    objcopy_str = str_append(objcopy_str,
-        "objcopy -O binary "
-        "--only-section=.text ");
-    objcopy_str = str_append(objcopy_str, name);
-    objcopy_str = str_append(objcopy_str, ".obj ");
-    objcopy_str = str_append(objcopy_str, name);
-    objcopy_str = str_append(objcopy_str, ".bin");
-
-    f = popen(objcopy_str, "r");
-    if (f == NULL) fatal("cannot generate bin file");
-    pclose(f);
-
-    DECLEAR_STATIC_STR(binname_str);
-
-    binname_str = str_append(binname_str, name);
-    binname_str = str_append(binname_str, ".bin");
-
-    f = fopen(binname_str, "rb");
-    fseek(f, 0, SEEK_END);
-    size_t fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    static u8 *binbuf = NULL;
-    if (binbuf) {
-        binbuf = realloc(binbuf, fsize);
-    } else {
-        binbuf = malloc(fsize);
-    }
-
-    size_t ret = fread(binbuf, 1, fsize, f);
-    assert(ret == fsize);
-    fclose(f);
-
-    return cache_add(m->cache, m->state.pc, binbuf, fsize);
+    return cache_add(m->cache, m->state.pc, binbuf, binsz);
 }
