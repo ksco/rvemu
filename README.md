@@ -92,23 +92,28 @@ sys     0m0.050s
 #### rvemu
 
 ```
-BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
-NUMERIC SORT        :  Iterations/sec.:       1412.82  Index:  36.23
-STRING SORT         :  Iterations/sec.:         71.06  Index:  31.75
-BITFIELD            :  Iterations/sec.:  665885840.35  Index: 114.22
-FP EMULATION        :  Iterations/sec.:        539.34  Index: 258.80
-FOURIER             :  Iterations/sec.:       6721.18  Index:   7.64
+NUMERIC SORT        :  Iterations/sec.:       1413.29  Index:  36.24
+STRING SORT         :  Iterations/sec.:         71.17  Index:  31.80
+BITFIELD            :  Iterations/sec.:  653766423.76  Index: 112.14
+FP EMULATION        :  Iterations/sec.:        527.33  Index: 253.04
+FOURIER             :  Iterations/sec.:       6345.69  Index:   7.22
+ASSIGNMENT          :  Iterations/sec.:         75.19  Index: 286.12
+IDEA                :  Iterations/sec.:      10489.30  Index: 160.43
+HUFFMAN             :  Iterations/sec.:       4384.40  Index: 121.58
 ```
 
 #### QEMU
 
 ```
 BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
-NUMERIC SORT        :  Iterations/sec.:        821.41  Index:  21.07
-STRING SORT         :  Iterations/sec.:         25.23  Index:  11.27
-BITFIELD            :  Iterations/sec.:  406361881.21  Index:  69.71
-FP EMULATION        :  Iterations/sec.:        162.38  Index:  77.92
-FOURIER             :  Iterations/sec.:       5872.21  Index:   6.68
+NUMERIC SORT        :  Iterations/sec.:        821.90  Index:  21.08
+STRING SORT         :  Iterations/sec.:         25.24  Index:  11.28
+BITFIELD            :  Iterations/sec.:  406495858.33  Index:  69.73
+FP EMULATION        :  Iterations/sec.:        162.26  Index:  77.86
+FOURIER             :  Iterations/sec.:       5867.78  Index:   6.67
+ASSIGNMENT          :  Iterations/sec.:         31.98  Index: 121.69
+IDEA                :  Iterations/sec.:       5234.18  Index:  80.06
+HUFFMAN             :  Iterations/sec.:       2205.89  Index:  61.17
 ```
 
 ## Refs
