@@ -6,18 +6,74 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 ## Features
 
-1. Fast.
+1. Faster than QEMU in most cases.
 2. Platform independent, but only tested it under x86_64 so far.
 3. Tiny, and easy to understand.
 4. Targeting RV64IMFDC w/ Newlib (only a small subset of syscalls is implemented).
 
 ## Benchmark
-```
-CPU:   Intel Xeon Platinum 8269CY
-BENCH: nbench https://github.com/nfinit/ansibench/tree/master/nbench
+
+> All the tests is compiled with `riscv64-unknown-elf-gcc -O3` and runs on Intel Xeon Platinum 8269CY
+
+### Recursive Fibonacci
+
+```c
+#include <stdio.h>
+
+int fib(int n) {
+    if (n == 0 || n == 1) return n;
+    return fib(n-1) + fib(n-2);
+}
+
+int main(void) {
+    printf("%d\n", fib(42));
+    return 0;
+}
 ```
 
-### rvemu
+#### rvemu
+
+```
+real    0m2.518s
+user    0m2.483s
+sys     0m0.035s
+```
+
+#### QEMU
+
+```
+real    0m2.800s
+user    0m2.795s
+sys     0m0.006s
+```
+
+---
+
+### [Prime Numbers](https://github.com/tsoding/prime-benchmark/blob/master/prime.c)
+
+> In this very case, rvemu is 3x faster than QEMU!
+
+#### rvemu
+
+```
+real    0m54.067s
+user    0m54.019s
+sys     0m0.047s
+```
+
+#### QEMU
+
+```
+real    2m58.996s
+user    2m58.916s
+sys     0m0.050s
+```
+
+---
+
+### [nbench](https://github.com/nfinit/ansibench/tree/master/nbench)
+
+#### rvemu
 
 ```
 BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
@@ -31,7 +87,7 @@ IDEA                :  Iterations/sec.:       2890.48  Index:  44.21
 HUFFMAN             :  Iterations/sec.:        915.41  Index:  25.38
 ```
 
-### QEMU
+#### QEMU
 
 ```
 BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
@@ -52,3 +108,4 @@ Inspired by
 1. https://github.com/gamozolabs/fuzz_with_emus
 2. https://github.com/jart/blink
 3. https://github.com/michaeljclark/rv8
+4. https://github.com/OpenXiangShan/NEMU
