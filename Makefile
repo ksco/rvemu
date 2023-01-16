@@ -1,15 +1,16 @@
 CFLAGS=-O3 -Wall -Werror -Wimplicit-fallthrough
 SRCS=$(wildcard src/*.c)
-HDRS=$(wildcard src/*.h)
-OBJS=$(SRCS:.c=.o)
+OBJS=$(patsubst src/%.c, obj/%.o, $(SRCS))
 CC=clang
 
 rvemu: $(OBJS)
 	$(CC) $(CFLAGS) -lm -o $@ $^ $(LDFLAGS)
 
-$(OBJS): $(HDRS)
+$(OBJS): obj/%.o: src/%.c
+	@mkdir -p $$(dirname $@)
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:
-	rm -f rvemu src/*.o
+	rm -rf rvemu obj/
 
 .PHONY: clean
