@@ -106,6 +106,7 @@ FOURIER             :  Iterations/sec.:       6345.69  Index:   7.22
 ASSIGNMENT          :  Iterations/sec.:         75.19  Index: 286.12
 IDEA                :  Iterations/sec.:      10489.30  Index: 160.43
 HUFFMAN             :  Iterations/sec.:       4384.40  Index: 121.58
+LU DECOMPOSITION    :  Iterations/sec.:        614.64  Index:  31.84
 ```
 
 #### QEMU
@@ -120,6 +121,7 @@ FOURIER             :  Iterations/sec.:       5867.78  Index:   6.67
 ASSIGNMENT          :  Iterations/sec.:         31.98  Index: 121.69
 IDEA                :  Iterations/sec.:       5234.18  Index:  80.06
 HUFFMAN             :  Iterations/sec.:       2205.89  Index:  61.17
+LU DECOMPOSITION    :  Iterations/sec.:        241.70  Index:  12.52
 ```
 
 ## Refs
