@@ -13,69 +13,11 @@ int main(int argc, char *argv[]) {
 
     while(true) {
         enum exit_reason_t reason = machine_step(&machine);
+        assert(reason == ecall);
 
-        switch (reason) {
-        case ecall: {
-            u64 syscall = machine_get_gp_reg(&machine, a7);
-            switch (syscall) {
-            case 57: { /* CLOSE */
-                i64 fd = machine_get_gp_reg(&machine, a0);
-                if (fd > 2) {
-                    machine_set_gp_reg(&machine, a0, close(fd));
-                }
-            }
-            break;
-            case 64: { /* WRITE */
-                i64 fd = machine_get_gp_reg(&machine, a0);
-                u64 ptr = machine_get_gp_reg(&machine, a1);
-                u64 len = machine_get_gp_reg(&machine, a2);
-                FILE *f = fdopen(fd, "w");
-                fprintf(f, "%.*s", (int)len, (char *)(machine.mmu.mem + ptr));
-                fflush(f);
-                machine_set_gp_reg(&machine, a0, len);
-            }
-            break;
-            case 80: { /* FSTAT */
-                i64 fd = machine_get_gp_reg(&machine, a0);
-                u64 stat_addr = machine_get_gp_reg(&machine, a1);
-                struct stat s = {0};
-                machine_set_gp_reg(&machine, a0, (uint64_t)fstat(fd, &s));
-                mmu_write(&machine.mmu, stat_addr, (u8 *)&s, sizeof(s));
-            }
-            break;
-            case 93: { /* EXIT */
-                int exit_code = machine_get_gp_reg(&machine, a0);
-                exit(exit_code);
-            }
-            break;
-            case 169: { /* GETTIMEOFDAY */
-                u64 tv_addr = machine_get_gp_reg(&machine, a0);
-                u64 tz_addr = machine_get_gp_reg(&machine, a1);
-
-                struct timezone *tz = NULL;
-                if (tz_addr != 0) {
-                   tz = (struct timezone *)(machine.mmu.mem + tz_addr);
-                }
-
-                struct timeval *tv = (struct timeval *)(machine.mmu.mem + tv_addr);
-                machine_set_gp_reg(&machine, a0, gettimeofday(tv, tz));
-            }
-            break;
-            case 214: { /* BRK */
-                u64 addr = machine_get_gp_reg(&machine, a0);
-                if (addr == 0) addr = machine.mmu.alloc;
-                assert(addr >= machine.mmu.base);
-                i64 incr = (i64)addr - machine.mmu.alloc;
-                mmu_alloc(&machine.mmu, incr);
-                machine_set_gp_reg(&machine, a0, addr);
-            }
-            break;
-            default: fatal("unknown syscall");
-            }
-        }
-        break;
-        default: unreachable();
-        }
+        u64 syscall = machine_get_gp_reg(&machine, a7);
+        u64 ret = do_syscall(&machine, syscall);
+        machine_set_gp_reg(&machine, a0, ret);
     }
 
     return 0;

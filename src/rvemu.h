@@ -18,13 +18,16 @@
 #include "reg.h"
 
 #define todo(msg) (fprintf(stderr, "warning: %s:%d [TODO] %s\n", __FILE__, __LINE__, msg))
-#define fatal(msg) (fprintf(stderr, "fatal: %s:%d %s\n", __FILE__, __LINE__, msg), exit(1))
+#define fatalf(fmt, ...) (fprintf(stderr, "fatal: %s:%d " fmt "\n", __FILE__, __LINE__, __VA_ARGS__), exit(1))
+#define fatal(msg) fatalf("%s", msg)
 #define unreachable() (fatal("unreachable"), __builtin_unreachable())
 
 #define ROUNDDOWN(x, k) ((x) & -(k))
 #define ROUNDUP(x, k)   (((x) + (k)-1) & -(k))
 #define MIN(x, y)       ((y) > (x) ? (x) : (y))
 #define MAX(x, y)       ((y) < (x) ? (x) : (y))
+
+#define ARRAY_SIZE(x)   (sizeof(x)/sizeof((x)[0]))
 
 enum insn_type_t {
     insn_lb, insn_lh, insn_lw, insn_ld, insn_lbu, insn_lhu, insn_lwu,
@@ -250,3 +253,9 @@ void set_reset(set_t *);
 */
 
 void machine_decode(u32, insn_t *);
+
+/**
+ * syscall.c
+*/
+
+u64 do_syscall(machine_t *, u64);
