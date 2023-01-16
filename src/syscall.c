@@ -71,22 +71,22 @@
 
 typedef u64 (* syscall_t)(machine_t *);
 
-u64 sys_unimplemented(machine_t *m) {
+static u64 sys_unimplemented(machine_t *m) {
     fatalf("unimplemented syscall: %lu", machine_get_gp_reg(m, a7));
 }
 
-u64 sys_exit(machine_t *m) {
+static u64 sys_exit(machine_t *m) {
     GET(a0, code);
     exit(code);
 }
 
-u64 sys_close(machine_t *m) {
+static u64 sys_close(machine_t *m) {
     GET(a0, fd);
     if (fd > 2) return close(fd);
     return 0;
 }
 
-u64 sys_write(machine_t *m) {
+static u64 sys_write(machine_t *m) {
     GET(a0, fd);
     GET(a1, ptr);
     GET(a2, len);
@@ -96,7 +96,7 @@ u64 sys_write(machine_t *m) {
     return len;
 }
 
-u64 sys_fstat(machine_t *m) {
+static u64 sys_fstat(machine_t *m) {
     GET(a0, fd);
     GET(a1, addr);
     struct stat s = {0};
@@ -105,7 +105,7 @@ u64 sys_fstat(machine_t *m) {
     return ret;
 }
 
-u64 sys_gettimeofday(machine_t *m) {
+static u64 sys_gettimeofday(machine_t *m) {
     GET(a0, tv_addr);
     GET(a1, tz_addr);
     struct timezone *tz = NULL;
@@ -114,7 +114,7 @@ u64 sys_gettimeofday(machine_t *m) {
     return gettimeofday(tv, tz);
 }
 
-u64 sys_brk(machine_t *m) {
+static u64 sys_brk(machine_t *m) {
     GET(a0, addr);
     if (addr == 0) addr = m->mmu.alloc;
     assert(addr >= m->mmu.base);
@@ -123,17 +123,63 @@ u64 sys_brk(machine_t *m) {
     return addr;
 }
 
+// the O_* macros is OS dependent.
+// here is a workaround to convert newlib flags to the host.
+#define NEWLIB_O_RDONLY   0x0
+#define NEWLIB_O_WRONLY   0x1
+#define NEWLIB_O_RDWR     0x2
+#define NEWLIB_O_APPEND   0x8
+#define NEWLIB_O_CREAT  0x200
+#define NEWLIB_O_TRUNC  0x400
+#define NEWLIB_O_EXCL   0x800
+#define REWRITE_FLAG(flag) if (flags & NEWLIB_ ##flag) hostflags |= flag;
+
+static int convert_flags(int flags) {
+    int hostflags = 0;
+    REWRITE_FLAG(O_RDONLY);
+    REWRITE_FLAG(O_WRONLY);
+    REWRITE_FLAG(O_RDWR);
+    REWRITE_FLAG(O_APPEND);
+    REWRITE_FLAG(O_CREAT);
+    REWRITE_FLAG(O_TRUNC);
+    REWRITE_FLAG(O_EXCL);
+    return hostflags;
+}
+
+static u64 sys_openat(machine_t *m) {
+    GET(a0, dirfd);
+    GET(a1, nameptr);
+    GET(a2, flags);
+    GET(a3, mode);
+    return openat(dirfd, (char *)(m->mmu.mem + nameptr), convert_flags(flags), mode);
+}
+
+static u64 sys_open(machine_t *m) {
+    GET(a0, nameptr);
+    GET(a1, flags);
+    GET(a2, mode);
+    u64 ret = open((char *)(m->mmu.mem + nameptr), convert_flags(flags), (mode_t)mode);
+    return ret;
+}
+
+static u64 sys_lseek(machine_t *m) {
+    GET(a0, fd);
+    GET(a1, offset);
+    GET(a2, whence);
+    return lseek(fd, offset, whence);
+}
+
 static syscall_t syscall_table[] = {
     [SYS_exit] =           sys_exit,
     [SYS_exit_group] =     sys_exit,
     [SYS_read] =           sys_unimplemented,
     [SYS_pread] =          sys_unimplemented,
-    [SYS_write] =          sys_unimplemented,
-    [SYS_openat] =         sys_unimplemented,
+    [SYS_write] =          sys_write,
+    [SYS_openat] =         sys_openat,
     [SYS_close] =          sys_close,
     [SYS_fstat] =          sys_fstat,
     [SYS_statx] =          sys_unimplemented,
-    [SYS_lseek] =          sys_unimplemented,
+    [SYS_lseek] =          sys_lseek,
     [SYS_fstatat] =        sys_unimplemented,
     [SYS_linkat] =         sys_unimplemented,
     [SYS_unlinkat] =       sys_unimplemented,
@@ -156,7 +202,7 @@ static syscall_t syscall_table[] = {
     [SYS_rt_sigaction] =   sys_unimplemented,
     [SYS_gettimeofday] =   sys_gettimeofday,
     [SYS_times] =          sys_unimplemented,
-    [SYS_writev] =         sys_write,
+    [SYS_writev] =         sys_unimplemented,
     [SYS_faccessat] =      sys_unimplemented,
     [SYS_fcntl] =          sys_unimplemented,
     [SYS_ftruncate] =      sys_unimplemented,
@@ -169,7 +215,7 @@ static syscall_t syscall_table[] = {
 };
 
 static syscall_t old_syscall_table[] = {
-    [-OLD_SYSCALL_THRESHOLD + SYS_open] =   sys_unimplemented,
+    [-OLD_SYSCALL_THRESHOLD + SYS_open] =   sys_open,
     [-OLD_SYSCALL_THRESHOLD + SYS_link] =   sys_unimplemented,
     [-OLD_SYSCALL_THRESHOLD + SYS_unlink] = sys_unimplemented,
     [-OLD_SYSCALL_THRESHOLD + SYS_mkdir] =  sys_unimplemented,
