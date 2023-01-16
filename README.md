@@ -13,6 +13,12 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 ## Usage
 
+```
+make -j
+riscv64-unknown-elf-gcc hello.c
+./rvemu a.out
+```
+
 `rvemu` can only run under Linux at present, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
 
 ## TODOs
