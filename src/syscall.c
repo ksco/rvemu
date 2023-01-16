@@ -169,10 +169,17 @@ static u64 sys_lseek(machine_t *m) {
     return lseek(fd, offset, whence);
 }
 
+static u64 sys_read(machine_t *m) {
+    GET(a0, fd);
+    GET(a1, bufptr);
+    GET(a2, count);
+    return read(fd, (char *)(m->mmu.mem + bufptr), (size_t)count);
+}
+
 static syscall_t syscall_table[] = {
     [SYS_exit] =           sys_exit,
     [SYS_exit_group] =     sys_exit,
-    [SYS_read] =           sys_unimplemented,
+    [SYS_read] =           sys_read,
     [SYS_pread] =          sys_unimplemented,
     [SYS_write] =          sys_write,
     [SYS_openat] =         sys_openat,
