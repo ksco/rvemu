@@ -458,19 +458,20 @@ static str_t func_ecall(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack,
     return s;
 }
 
-#define FUNC()                                        \
-    switch (insn->csr) {                              \
-    case fflags:                                      \
-    case frm:                                         \
-    case fcsr:                                        \
-        break;                                        \
-    default: fatal("unsupported csr");                \
-    }                                                 \
-    if (insn->rd) {                                   \
-        sprintf(funcbuf, "    x%d = 0;\n", insn->rd); \
-        s = str_append(s, funcbuf);                   \
-    }                                                 \
-    return s;                                         \
+#define FUNC()                                         \
+    switch (insn->csr) {                               \
+    case fflags:                                       \
+    case frm:                                          \
+    case fcsr:                                         \
+        break;                                         \
+    default: fatal("unsupported csr");                 \
+    }                                                  \
+    if (insn->rd) {                                    \
+        sprintf(funcbuf, "    x%d = 0;\n", insn->rd);  \
+        tracer_add_gp_reg_usage(tracer, insn->rd, -1); \
+        s = str_append(s, funcbuf);                    \
+    }                                                  \
+    return s;                                          \
 
 static str_t func_csrrw(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     FUNC();
