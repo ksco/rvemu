@@ -69,7 +69,7 @@ void machine_load_program(machine_t *m, char* prog) {
 }
 
 void machine_setup(machine_t *m, int argc, char *argv[]) {
-    size_t stack_size = 32 * 1024;
+    size_t stack_size = 32 * 1024 * 1024;
     u64 stack = mmu_alloc(&m->mmu, stack_size);
     m->state.gp_regs[sp] = stack + stack_size;
 
