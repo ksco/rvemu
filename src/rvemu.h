@@ -171,7 +171,7 @@ typedef struct {
 
 cache_t *new_cache();
 u8 *cache_lookup(cache_t *, u64);
-u8 *cache_add(cache_t *, u64, u8 *, size_t);
+u8 *cache_add(cache_t *, u64, u8 *, size_t, u64);
 bool cache_hot(cache_t *, u64);
 
 /**

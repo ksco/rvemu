@@ -38,7 +38,13 @@ u8 *cache_lookup(cache_t *cache, u64 pc) {
     return NULL;
 }
 
-u8 *cache_add(cache_t *cache, u64 pc, u8 *code, size_t sz) {
+static inline u64 align_to(u64 val, u64 align) {
+  if (align == 0) return val;
+  return (val + align - 1) & ~(align - 1);
+}
+
+u8 *cache_add(cache_t *cache, u64 pc, u8 *code, size_t sz, u64 align) {
+    cache->offset = align_to(cache->offset, align);
     assert(cache->offset + sz <= CACHE_SIZE);
 
     u64 index = hash(pc);
