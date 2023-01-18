@@ -89,13 +89,13 @@ static char funcbuf2[128] = {0};
     sprintf(funcbuf, "    " #typ " " #name " = f%d." #field ";\n", (reg)); \
     s = str_append(s, funcbuf);                                            \
 
-#define MEM_LOAD(addr, typ, name)                                                              \
-    sprintf(funcbuf, "    %s " #name " = *(%s *)(state->mem + %s);\n", (typ), (typ), (addr));  \
-    s = str_append(s, funcbuf);                                                                \
+#define MEM_LOAD(addr, typ, name)                                                       \
+    sprintf(funcbuf, "    %s " #name " = *(%s *)TO_HOST(%s);\n", (typ), (typ), (addr)); \
+    s = str_append(s, funcbuf);                                                         \
 
-#define MEM_STORE(addr, typ, data)                                                             \
-    sprintf(funcbuf, "    *(%s *)(state->mem + %s) = (%s)" #data ";\n", (typ), (addr), (typ)); \
-    s = str_append(s, funcbuf);                                                                \
+#define MEM_STORE(addr, typ, data)                                                \
+    sprintf(funcbuf, "    *(%s *)TO_HOST(%s) = (%s)" #data ";\n", (typ), (addr), (typ)); \
+    s = str_append(s, funcbuf);                                                   \
 
 static str_t func_empty(str_t s, insn_t *insn, tracer_t *tracer, stack_t *stack, u64 pc) {
     return s;
@@ -1044,6 +1044,8 @@ static func_t *funcs[] = {
 };
 
 #define CODEGEN_PROLOGUE                                \
+    "#define OFFSET 0x088800000000ULL               \n" \
+    "#define TO_HOST(addr) (addr + OFFSET)          \n" \
     "enum exit_reason_t {                           \n" \
     "   none,                                       \n" \
     "   direct_branch,                              \n" \
@@ -1063,7 +1065,6 @@ static func_t *funcs[] = {
     "    uint64_t gp_regs[32];                      \n" \
     "    fp_reg_t fp_regs[32];                      \n" \
     "    uint64_t pc;                               \n" \
-    "    uint8_t *restrict mem;                     \n" \
     "    uint32_t fcsr;                             \n" \
     "} state_t;                                     \n" \
     "void start(volatile state_t *restrict state) { \n" \
@@ -1097,7 +1098,7 @@ str_t machine_genblock(machine_t *m) {
         sprintf(buf, "insn_%lx: {\n", pc);
         body = str_append(body, buf);
 
-        u32 data = mmu_read32(&m->mmu, pc);
+        u32 data = *(u32 *)TO_HOST(pc);
         machine_decode(data, &insn);
         body = funcs[insn.type](body, &insn, &tracer, &stack, pc);
 

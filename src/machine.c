@@ -81,11 +81,11 @@ void machine_setup(machine_t *m, int argc, char *argv[]) {
     for (int i = args; i > 0; i--) {
         size_t len = strlen(argv[i]);
         u64 addr = mmu_alloc(&m->mmu, len+1);
-        mmu_write(&m->mmu, addr, (u8 *)argv[i], len);
+        mmu_write(addr, (u8 *)argv[i], len);
         m->state.gp_regs[sp] -= 8; // argv[i]
-        mmu_write(&m->mmu, m->state.gp_regs[sp], (u8 *)&addr, sizeof(u64));
+        mmu_write(m->state.gp_regs[sp], (u8 *)&addr, sizeof(u64));
     }
 
     m->state.gp_regs[sp] -= 8; // argc
-    mmu_write(&m->mmu, m->state.gp_regs[sp], (u8 *)&args, sizeof(u64));
+    mmu_write(m->state.gp_regs[sp], (u8 *)&args, sizeof(u64));
 }

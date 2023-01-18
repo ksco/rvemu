@@ -4,9 +4,9 @@
 
 static void func_empty(state_t *state, insn_t *insn) {}
 
-#define FUNC(typ)                                           \
-    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;  \
-    state->gp_regs[insn->rd] = *(typ *)(state->mem + addr); \
+#define FUNC(typ)                                          \
+    u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm; \
+    state->gp_regs[insn->rd] = *(typ *)TO_HOST(addr);      \
 
 static void func_lb(state_t *state, insn_t *insn) {
     FUNC(i8);
@@ -102,10 +102,10 @@ static void func_auipc(state_t *state, insn_t *insn) {
     state->gp_regs[insn->rd] = val;
 }
 
-#define FUNC(typ)                                      \
-    u64 rs1 = state->gp_regs[insn->rs1];               \
-    u64 rs2 = state->gp_regs[insn->rs2];               \
-    *(typ *)(state->mem + rs1 + insn->imm) = (typ)rs2; \
+#define FUNC(typ)                                \
+    u64 rs1 = state->gp_regs[insn->rs1];         \
+    u64 rs2 = state->gp_regs[insn->rs2];         \
+    *(typ *)TO_HOST(rs1 + insn->imm) = (typ)rs2; \
 
 static void func_sb(state_t *state, insn_t *insn) {
     FUNC(u8);
@@ -351,17 +351,17 @@ static void func_csrrci(state_t *state, insn_t *insn) { FUNC(); }
 
 static void func_flw(state_t *state, insn_t *insn) {
     u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
-    state->fp_regs[insn->rd].v = *(u32 *)(state->mem + addr) | ((u64)-1 << 32);
+    state->fp_regs[insn->rd].v = *(u32 *)TO_HOST(addr) | ((u64)-1 << 32);
 }
 static void func_fld(state_t *state, insn_t *insn) {
     u64 addr = state->gp_regs[insn->rs1] + (i64)insn->imm;
-    state->fp_regs[insn->rd].v = *(u64 *)(state->mem + addr);
+    state->fp_regs[insn->rd].v = *(u64 *)TO_HOST(addr);
 }
 
-#define FUNC(typ)                                      \
-    u64 rs1 = state->gp_regs[insn->rs1];               \
-    u64 rs2 = state->fp_regs[insn->rs2].v;             \
-    *(typ *)(state->mem + rs1 + insn->imm) = (typ)rs2; \
+#define FUNC(typ)                                \
+    u64 rs1 = state->gp_regs[insn->rs1];         \
+    u64 rs2 = state->fp_regs[insn->rs2].v;       \
+    *(typ *)TO_HOST(rs1 + insn->imm) = (typ)rs2; \
 
 static void func_fsw(state_t *state, insn_t *insn) {
     FUNC(u32);
@@ -796,7 +796,7 @@ static func_t *funcs[] = {
 void exec_block_interp(state_t *state) {
     static insn_t insn = {0};
     while (true) {
-        u32 data = *(u32 *)(state->mem + state->pc);
+        u32 data = *(u32 *)TO_HOST(state->pc);
         machine_decode(data, &insn);
 
         funcs[insn.type](state, &insn);

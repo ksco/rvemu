@@ -29,6 +29,12 @@
 
 #define ARRAY_SIZE(x)   (sizeof(x)/sizeof((x)[0]))
 
+
+#define GUEST_MEMORY_OFFSET 0x088800000000ULL
+
+#define TO_HOST(addr)  (addr + GUEST_MEMORY_OFFSET)
+#define TO_GUEST(addr) (addr - GUEST_MEMORY_OFFSET)
+
 enum insn_type_t {
     insn_lb, insn_lh, insn_lw, insn_ld, insn_lbu, insn_lhu, insn_lwu,
     insn_fence, insn_fence_i,
@@ -124,31 +130,17 @@ str_t str_append(str_t, const char *);
  * mmu.c
 */
 typedef struct {
-    u8* mem;
     u64 entry;
+    u64 host_alloc;
     u64 alloc;
-    u64 cap;
     u64 base;
 } mmu_t;
 
 void mmu_load_elf(mmu_t *, int, off_t);
+u64 mmu_alloc(mmu_t *, i64);
 
-inline void mmu_write(mmu_t *mmu, u64 addr, u8 *data, size_t len) {
-    memcpy((void *)(mmu->mem + addr), (void *)data, len);
-}
-
-inline u32 mmu_read32(mmu_t *mmu, u64 addr) {
-    return *(u32 *)(mmu->mem + addr);
-}
-
-inline u64 mmu_alloc(mmu_t *mmu, i64 sz) {
-    u64 base = mmu->alloc;
-    assert(base < mmu->cap && base >= mmu->base);
-
-    mmu->alloc += sz;
-    assert(mmu->alloc <= mmu->cap && mmu->alloc >= mmu->base);
-
-    return base;
+inline void mmu_write(u64 addr, u8 *data, size_t len) {
+    memcpy((void *)TO_HOST(addr), (void *)data, len);
 }
 
 /**
@@ -197,7 +189,6 @@ typedef struct {
     u64 gp_regs[num_gp_regs];
     fp_reg_t fp_regs[num_fp_regs];
     u64 pc;
-    u8 *mem;
 } state_t;
 
 void state_print_regs(state_t *);

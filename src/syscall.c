@@ -91,7 +91,7 @@ static u64 sys_write(machine_t *m) {
     GET(a1, ptr);
     GET(a2, len);
     FILE *f = fdopen(fd, "w");
-    fprintf(f, "%.*s", (int)len, (char *)(m->mmu.mem + ptr));
+    fprintf(f, "%.*s", (int)len, (char *)TO_HOST(ptr));
     fflush(f);
     return len;
 }
@@ -101,7 +101,7 @@ static u64 sys_fstat(machine_t *m) {
     GET(a1, addr);
     struct stat s = {0};
     u64 ret = (uint64_t)fstat(fd, &s);
-    mmu_write(&m->mmu, addr, (u8 *)&s, sizeof(s));
+    memcpy((void *)TO_HOST(addr), &s, sizeof(s));
     return ret;
 }
 
@@ -109,8 +109,8 @@ static u64 sys_gettimeofday(machine_t *m) {
     GET(a0, tv_addr);
     GET(a1, tz_addr);
     struct timezone *tz = NULL;
-    struct timeval *tv = (struct timeval *)(m->mmu.mem + tv_addr);
-    if (tz_addr != 0) tz = (struct timezone *)(m->mmu.mem + tz_addr);
+    struct timeval *tv = (struct timeval *)TO_HOST(tv_addr);
+    if (tz_addr != 0) tz = (struct timezone *)TO_HOST(tz_addr);
     return gettimeofday(tv, tz);
 }
 
@@ -151,14 +151,14 @@ static u64 sys_openat(machine_t *m) {
     GET(a1, nameptr);
     GET(a2, flags);
     GET(a3, mode);
-    return openat(dirfd, (char *)(m->mmu.mem + nameptr), convert_flags(flags), mode);
+    return openat(dirfd, (char *)TO_HOST(nameptr), convert_flags(flags), mode);
 }
 
 static u64 sys_open(machine_t *m) {
     GET(a0, nameptr);
     GET(a1, flags);
     GET(a2, mode);
-    u64 ret = open((char *)(m->mmu.mem + nameptr), convert_flags(flags), (mode_t)mode);
+    u64 ret = open((char *)TO_HOST(nameptr), convert_flags(flags), (mode_t)mode);
     return ret;
 }
 
@@ -173,7 +173,7 @@ static u64 sys_read(machine_t *m) {
     GET(a0, fd);
     GET(a1, bufptr);
     GET(a2, count);
-    return read(fd, (char *)(m->mmu.mem + bufptr), (size_t)count);
+    return read(fd, (char *)TO_HOST(bufptr), (size_t)count);
 }
 
 static syscall_t syscall_table[] = {
