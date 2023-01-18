@@ -54,3 +54,4 @@ dkms.conf
 # rvemu
 rvemu
 out/
+core
