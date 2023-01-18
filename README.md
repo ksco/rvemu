@@ -21,17 +21,15 @@ riscv64-unknown-elf-gcc hello.c
 ./rvemu a.out
 ```
 
-`rvemu` can only run under Linux at present, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
-
-## TODOs
-
-- [ ] Add more syscalls.
+`rvemu` can only run under Linux, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
 
 ## Notes
 
 1. `rvemu` uses `clang -O3` to generate highly optimized target code.
 
 2. `rvemu` uses hardfloat technique to gain more performance, just like [NEMU](https://github.com/OpenXiangShan/NEMU), this actually violates the RISC-V standard, but it produces correct results in most cases, and it's way faster than softfloat.
+
+3. `rvemu` uses a linear-mapped MMU similar to [blink](https://github.com/jart/blink), which is really fast.
 
 
 ## Benchmark
