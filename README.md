@@ -23,6 +23,18 @@ riscv64-unknown-elf-gcc hello.c
 
 `rvemu` can only run under Linux, and `clang` needs to be installed to run, as rvemu uses `clang` to generate jit code.
 
+## Showcase
+
+### Running Lua 4.0.1
+
+```
+$ ./rvemu bin/lua -v
+Lua 4.0.1  Copyright (C) 1994-2000 TeCGraf, PUC-Rio
+
+$ ./rvemu bin/lua test/hello.lua
+hello world, from Lua!
+```
+
 ## Notes
 
 1. `rvemu` uses `clang -O3` to generate highly optimized target code.
