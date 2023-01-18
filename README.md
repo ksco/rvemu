@@ -35,6 +35,15 @@ $ ./rvemu bin/lua test/hello.lua
 hello world, from Lua!
 ```
 
+### Running Java (using [PitifulVM](https://github.com/sysprog21/pitifulvm))
+
+```
+$ javac tests/Hello.java
+
+$ ./rvemu jvm tests/Hello.class
+Hello, World!
+```
+
 ## Notes
 
 1. `rvemu` uses `clang -O3` to generate highly optimized target code.
