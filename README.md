@@ -26,7 +26,6 @@ riscv64-unknown-elf-gcc hello.c
 ## TODOs
 
 - [ ] Add more syscalls.
-- [ ] Consider using a mmaped MMU.
 
 ## Notes
 
