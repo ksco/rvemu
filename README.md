@@ -36,7 +36,7 @@ riscv64-unknown-elf-gcc hello.c
 
 > All the tests is compiled with `riscv64-unknown-elf-gcc -O3` and runs on Intel Xeon Platinum 8269CY
 
-### Recursive Fibonacci (time in seconds)
+### Recursive Fibonacci
 ```c
 #include <stdio.h>
 
@@ -46,32 +46,33 @@ int fib(int n) {
 }
 
 int main(void) {
-    printf("%d
-", fib(42));
+    printf("%d", fib(42));
     return 0;
 }
 ```
 
+
 ```
-   rvemu | ###############################################              | 2.181
-    QEMU | ############################################################ | 2.8
-  Native | ####################                                         | 0.924
+   rvemu | ###############################################              | 2.181s
+    QEMU | ############################################################ | 2.8s
+  Native | ####################                                         | 0.924s
 ```
 
 ---
 
-### [Prime Numbers](https://github.com/tsoding/prime-benchmark/blob/master/prime.c) (time in seconds)
+
+
+### [Prime Numbers](https://github.com/tsoding/prime-benchmark/blob/master/prime.c)
 
 > In this very case, rvemu is 3x faster than QEMU!
 
 ```
-   rvemu | #################                                            | 49.852
-    QEMU | ############################################################ | 178.916
+   rvemu | #################                                            | 49.852s
+    QEMU | ############################################################ | 178.916s
   Native | ##############                                               | 41.002
 ```
 
 ---
-
 
 
 
