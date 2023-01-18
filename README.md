@@ -36,8 +36,11 @@ riscv64-unknown-elf-gcc hello.c
 
 > All the tests is compiled with `riscv64-unknown-elf-gcc -O3` for RISC-V and `clang-15` for x86 native, and run on Intel Xeon Platinum 8269CY.
 
-### [nbench](https://github.com/nfinit/ansibench/tree/master/nbench) (iterations/second)
-#### NUMERIC SORT
+
+- Test suite: [nbench](https://github.com/nfinit/ansibench/tree/master/nbench)
+- Unit: iterations/second
+
+### NUMERIC SORT
 
 ```
    rvemu | #######################################################      | 1595.92
@@ -46,7 +49,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### STRING SORT
+### STRING SORT
 
 ```
    rvemu | ###                                                          | 138.96
@@ -55,7 +58,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### BITFIELD
+### BITFIELD
 
 ```
    rvemu | #########################################################    | 741057761.48
@@ -64,7 +67,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### FP EMULATION
+### FP EMULATION
 
 ```
    rvemu | ##################################                           | 591.06
@@ -73,7 +76,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### FOURIER
+### FOURIER
 
 ```
    rvemu | ###                                                          | 6284.49
@@ -82,7 +85,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### ASSIGNMENT
+### ASSIGNMENT
 
 ```
    rvemu | ##################################################           | 84.68
@@ -91,7 +94,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### IDEA
+### IDEA
 
 ```
    rvemu | #############################################                | 11070.72
@@ -100,7 +103,7 @@ riscv64-unknown-elf-gcc hello.c
 ```
 
 
-#### HUFFMAN
+### HUFFMAN
 
 ```
    rvemu | ############################################################ | 5070.87
