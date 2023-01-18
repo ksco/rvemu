@@ -80,7 +80,7 @@ u64 mmu_alloc(mmu_t *mmu, i64 sz) {
             fatal("mmap failed");
         mmu->host_alloc += ROUNDUP(sz, page_size);
     } else if (sz < 0 && ROUNDUP(mmu->alloc, page_size) < TO_GUEST(mmu->host_alloc)) {
-        u64 len = mmu->host_alloc - ROUNDUP(mmu->alloc, page_size);
+        u64 len = TO_GUEST(mmu->host_alloc) - ROUNDUP(mmu->alloc, page_size);
         if (munmap((void *)ROUNDUP(mmu->alloc, page_size), len) == -1)
             fatal(strerror(errno));
     }
