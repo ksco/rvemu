@@ -91,7 +91,7 @@ static u64 sys_write(machine_t *m) {
     GET(a1, ptr);
     GET(a2, len);
     FILE *f = fdopen(fd, "w");
-    fprintf(f, "%.*s", (int)len, (char *)TO_HOST(ptr));
+    write(fd, (void *)TO_HOST(ptr), (size_t)len);
     fflush(f);
     return len;
 }
