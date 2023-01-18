@@ -6,7 +6,7 @@ Yeah, it's a toy, but a fairly complete and fast one, which is perfect for learn
 
 ## Features
 
-1. Faster than QEMU in most cases.
+1. Faster than QEMU, can achieve native performance in some cases.
 2. (Almost*) architecture independent, we've tested it under x86_64.
 3. Tiny, and easy to understand.
 4. Targeting RV64IMFDC w/ Newlib (only a small subset of syscalls is implemented, adding more).
@@ -58,8 +58,8 @@ int main(void) {
 #### rvemu
 
 ```
-real    0m2.518s
-user    0m2.483s
+real    0m2.181s
+user    0m2.146s
 sys     0m0.035s
 ```
 
@@ -71,6 +71,14 @@ user    0m2.795s
 sys     0m0.006s
 ```
 
+#### Native
+
+```
+real    0m0.924s
+user    0m0.921s
+sys     0m0.002s
+```
+
 ---
 
 ### [Prime Numbers](https://github.com/tsoding/prime-benchmark/blob/master/prime.c)
@@ -80,9 +88,9 @@ sys     0m0.006s
 #### rvemu
 
 ```
-real    0m54.067s
-user    0m54.019s
-sys     0m0.047s
+real    0m49.852s
+user    0m49.778s
+sys     0m0.069s
 ```
 
 #### QEMU
@@ -93,6 +101,14 @@ user    2m58.916s
 sys     0m0.050s
 ```
 
+#### Native
+
+```
+real    0m41.002s
+user    0m40.976s
+sys     0m0.017s
+```
+
 ---
 
 ### [nbench](https://github.com/nfinit/ansibench/tree/master/nbench)
@@ -100,15 +116,15 @@ sys     0m0.050s
 #### rvemu
 
 ```
-NUMERIC SORT        :  Iterations/sec.:       1413.29  Index:  36.24
-STRING SORT         :  Iterations/sec.:         71.17  Index:  31.80
-BITFIELD            :  Iterations/sec.:  653766423.76  Index: 112.14
-FP EMULATION        :  Iterations/sec.:        527.33  Index: 253.04
-FOURIER             :  Iterations/sec.:       6345.69  Index:   7.22
-ASSIGNMENT          :  Iterations/sec.:         75.19  Index: 286.12
-IDEA                :  Iterations/sec.:      10489.30  Index: 160.43
-HUFFMAN             :  Iterations/sec.:       4384.40  Index: 121.58
-LU DECOMPOSITION    :  Iterations/sec.:        614.64  Index:  31.84
+BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
+NUMERIC SORT        :  Iterations/sec.:       1595.92  Index:  40.93
+STRING SORT         :  Iterations/sec.:        138.96  Index:  62.09
+BITFIELD            :  Iterations/sec.:  741057761.48  Index: 127.12
+FP EMULATION        :  Iterations/sec.:        591.06  Index: 283.62
+FOURIER             :  Iterations/sec.:       6284.49  Index:   7.15
+ASSIGNMENT          :  Iterations/sec.:         84.68  Index: 322.24
+IDEA                :  Iterations/sec.:      11070.72  Index: 169.32
+HUFFMAN             :  Iterations/sec.:       5070.87  Index: 140.62
 ```
 
 #### QEMU
@@ -123,7 +139,20 @@ FOURIER             :  Iterations/sec.:       5867.78  Index:   6.67
 ASSIGNMENT          :  Iterations/sec.:         31.98  Index: 121.69
 IDEA                :  Iterations/sec.:       5234.18  Index:  80.06
 HUFFMAN             :  Iterations/sec.:       2205.89  Index:  61.17
-LU DECOMPOSITION    :  Iterations/sec.:        241.70  Index:  12.52
+```
+
+#### Native
+
+```
+BYTEmark (tm) Native Mode Benchmark ver. 2 (10/95)
+NUMERIC SORT        :  Iterations/sec.:       1525.98  Index:  39.13
+STRING SORT         :  Iterations/sec.:       2381.78  Index: 1064.25
+BITFIELD            :  Iterations/sec.:  781043985.89  Index: 133.98
+FP EMULATION        :  Iterations/sec.:        732.83  Index: 351.65
+FOURIER             :  Iterations/sec.:     149172.70  Index: 169.65
+ASSIGNMENT          :  Iterations/sec.:         61.67  Index: 234.68
+IDEA                :  Iterations/sec.:      11718.87  Index: 179.24
+HUFFMAN             :  Iterations/sec.:       6274.18  Index: 173.98
 ```
 
 ## Refs
