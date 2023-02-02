@@ -39,7 +39,7 @@ static void mmu_load_segment(mmu_t *mmu, elf64_phdr_t *phdr, int fd) {
     mmu->base = mmu->alloc = TO_GUEST(mmu->host_alloc);
 }
 
-void mmu_load_elf(mmu_t *mmu, int fd, off_t sz) {
+void mmu_load_elf(mmu_t *mmu, int fd) {
     u8 buf[sizeof(elf64_ehdr_t)];
     FILE *file = fdopen(fd, "rb");
     if (fread(buf, 1, sizeof(elf64_ehdr_t), file) != sizeof(elf64_ehdr_t)) {

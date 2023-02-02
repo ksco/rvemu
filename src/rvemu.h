@@ -136,7 +136,7 @@ typedef struct {
     u64 base;
 } mmu_t;
 
-void mmu_load_elf(mmu_t *, int, off_t);
+void mmu_load_elf(mmu_t *, int);
 u64 mmu_alloc(mmu_t *, i64);
 
 inline void mmu_write(u64 addr, u8 *data, size_t len) {
