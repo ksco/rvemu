@@ -1,5 +1,5 @@
-#ifndef rvemu_TYPE_H
-#define rvemu_TYPE_H
+#ifndef RVEMU_TYPE_H
+#define RVEMU_TYPE_H
 
 #include <stdint.h>
 
@@ -15,4 +15,4 @@ typedef double f64;
 typedef float f32;
 
 
-#endif // rvemu_TYPE_H
+#endif // RVEMU_TYPE_H
