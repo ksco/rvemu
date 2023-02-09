@@ -1,0 +1,26 @@
+# 从零开始实现 RISC-V 模拟器
+
+《从零开始实现 RISC-V 模拟器》是中科院软件所 PLCT Lab 推出的一门公开课。在本课程中，我们将使用 C 语言从零开始实现一个高性能 RISC-V 64 位模拟器。在课程的最后，我们会得到一个代码量 4000 行左右的，零依赖的用户态程序模拟器，可以运行一些真实世界的程序，比如 Lua 4.0。如果读者好奇 JIT 模拟器的工作原理，那么本课程正是为你准备的。
+
+我们提前实现了完整的参考代码：[ksco/rvemu](https://github.com/ksco/rvemu)。但本课程推荐的学习方式是自己根据对课程的理解手动实现，作者认为这样可以更扎实地掌握相应的知识。
+
+## 环境配置
+
+读者需要有一个 x86-64 架构的 Ubuntu 20.04 或 22.04 环境，真机、虚拟机或者 Docker 皆可。
+
+> 为了简化不必要的繁文缛节，本课程的代码有意地放弃了在不同平台和架构间的可移植性，只保证在 x86-64 架构的 Ubuntu 机器上可以正确运行。移植到其他平台和架构也只需要很少的改动，感兴趣的读者可以自行尝试。
+
+准备好 Ubuntu 之后，读者需要安装 `clang` 和 [RISC-V GNU Compiler Toolchain](https://github.com/riscv-collab/riscv-gnu-toolchain)。
+
+注意工具链需要编译 RV64 Newlib 版本，如果你懒得自己编译，也可以选择使用 [Release 页面](https://github.com/riscv-collab/riscv-gnu-toolchain/releases)中预先编译好的压缩包，直接下载 `riscv64-elf-ubuntu-`  开头，且与读者 Ubuntu 版本相符的压缩包，解压后即可使用。
+
+配置完成环境后，请确保 `riscv64-unknown-elf-gcc -v` 可以正确返回 `gcc` 的版本。
+
+我们之所以选择使用 Newlib 版本的工具链而不是常见的 glibc，是因为 Newlib 只需要实现很少的系统调用就可以完成大部分的功能，这样可以简化我们模拟器的实现。
+
+## 课程大纲
+
+> 👷 施工中。
+
+
+
