@@ -346,7 +346,7 @@ static inline insn_t insn_ciwtype_read(u16 data) {
     };
 }
 
-void machine_decode(u32 data, insn_t *insn) {
+void insn_decode(insn_t *insn, u32 data) {
     u32 quadrant = QUADRANT(data);
     switch (quadrant) {
     case 0x0: {
@@ -712,8 +712,8 @@ void machine_decode(u32 data, insn_t *insn) {
                 return;
             default: fatal("unrecognized funct3");
             }
-        unreachable();
         }
+        unreachable();
         case 0x5: /* AUIPC */
             *insn = insn_utype_read(data);
             insn->type = insn_auipc;

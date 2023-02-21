@@ -1099,7 +1099,7 @@ str_t machine_genblock(machine_t *m) {
         body = str_append(body, buf);
 
         u32 data = *(u32 *)TO_HOST(pc);
-        machine_decode(data, &insn);
+        insn_decode(&insn, data);
         body = funcs[insn.type](body, &insn, &tracer, &stack, pc);
 
         if (insn.cont) continue;

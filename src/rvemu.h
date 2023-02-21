@@ -243,7 +243,7 @@ void set_reset(set_t *);
  * decode.c
 */
 
-void machine_decode(u32, insn_t *);
+void insn_decode(insn_t *, u32);
 
 /**
  * syscall.c
