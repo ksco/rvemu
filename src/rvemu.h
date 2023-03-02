@@ -79,6 +79,52 @@ typedef struct {
 } insn_t;
 
 /**
+ * stack.c
+ */
+#define STACK_CAP 256
+typedef struct {
+    i64 top;
+    u64 elems[STACK_CAP];
+} stack_t;
+
+void stack_push(stack_t *, u64);
+bool stack_pop(stack_t *, u64 *);
+void stack_reset(stack_t *);
+void stack_print(stack_t *);
+
+/**
+ * str.c
+ */
+#define STR_MAX_PREALLOC (1024 * 1024)
+#define STRHDR(s) ((strhdr_t *)((s)-(sizeof(strhdr_t))))
+
+#define DECLEAR_STATIC_STR(name)   \
+    static str_t name = NULL;  \
+    if (name) str_clear(name); \
+    else name = str_new();     \
+
+typedef char * str_t;
+
+typedef struct {
+    u64 len;
+    u64 alloc;
+    char buf[];
+} strhdr_t;
+
+inline str_t str_new() {
+    strhdr_t *h = (strhdr_t *)calloc(1, sizeof(strhdr_t));
+    return h->buf;
+}
+
+inline size_t str_len(const str_t str) {
+    return STRHDR(str)->len;
+}
+
+void str_clear(str_t);
+
+str_t str_append(str_t, const char *);
+
+/**
  * mmu.c
 */
 typedef struct {
@@ -96,12 +142,36 @@ inline void mmu_write(u64 addr, u8 *data, size_t len) {
 }
 
 /**
+ * cache.c
+*/
+#define CACHE_ENTRY_SIZE (64 * 1024)
+#define CACHE_SIZE       (64 * 1024 * 1024)
+
+typedef struct {
+    u64 pc;
+    u64 hot;
+    u64 offset;
+} cache_item_t;
+
+typedef struct {
+    u8 *jitcode;
+    u64 offset;
+    cache_item_t table[CACHE_ENTRY_SIZE];
+} cache_t;
+
+cache_t *new_cache();
+u8 *cache_lookup(cache_t *, u64);
+u8 *cache_add(cache_t *, u64, u8 *, size_t, u64);
+bool cache_hot(cache_t *, u64);
+
+/**
  * state.c
 */
 enum exit_reason_t {
     none,
     direct_branch,
     indirect_branch,
+    interp,
     ecall,
 };
 
@@ -125,27 +195,45 @@ typedef struct {
 typedef struct {
     state_t state;
     mmu_t mmu;
+    cache_t *cache;
 } machine_t;
 
+typedef void (*exec_block_func_t)(state_t *);
+
 inline u64 machine_get_gp_reg(machine_t *m, i32 reg) {
-    assert(reg >=0 && reg <= num_gp_regs);
+    assert(reg >= 0 && reg <= num_gp_regs);
     return m->state.gp_regs[reg];
 }
 
 inline void machine_set_gp_reg(machine_t *m, i32 reg, u64 data) {
-    assert(reg >=0 && reg <= num_gp_regs);
+    assert(reg >= 0 && reg <= num_gp_regs);
     m->state.gp_regs[reg] = data;
 }
 
 void machine_setup(machine_t *, int, char **);
+str_t machine_genblock(machine_t *);
+u8 *machine_compile(machine_t *, str_t);
 enum exit_reason_t machine_step(machine_t *);
-void machine_load_program(machine_t *, char *);
+void machine_load_program(machine_t *, char*);
 
 /**
  * interp.c
 */
-
 void exec_block_interp(state_t *);
+
+/**
+ * set.c
+*/
+
+#define SET_SIZE (32 * 1024)
+
+typedef struct {
+    u64 table[SET_SIZE];
+} set_t;
+
+bool set_has(set_t *, u64);
+bool set_add(set_t *, u64);
+void set_reset(set_t *);
 
 /**
  * decode.c
