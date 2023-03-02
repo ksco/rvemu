@@ -1,23 +1,54 @@
 #include "rvemu.h"
 
 enum exit_reason_t machine_step(machine_t *m) {
-    while (true) {
-        m->state.exit_reason = none;
-        exec_block_interp(&m->state);
-        assert(m->state.exit_reason != none);
+    while(true) {
+        bool hot = true;
 
-        if (m->state.exit_reason == indirect_branch ||
-            m->state.exit_reason == direct_branch) {
-            m->state.pc = m->state.reenter_pc;
-            continue;
+        u8 *code = cache_lookup(m->cache, m->state.pc);
+        if (code == NULL) {
+            hot = cache_hot(m->cache, m->state.pc);
+            if (hot) {
+                str_t source = machine_genblock(m);
+                code = machine_compile(m, source);
+            }
         }
 
-        break;
-    }
+        if (!hot) {
+            code = (u8 *)exec_block_interp;
+        }
 
-    m->state.pc = m->state.reenter_pc;
-    assert(m->state.exit_reason == ecall);
-    return ecall;
+        while (true) {
+            m->state.exit_reason = none;
+            ((exec_block_func_t)code)(&m->state);
+            assert(m->state.exit_reason != none);
+
+            if (m->state.exit_reason == indirect_branch ||
+                m->state.exit_reason == direct_branch ) {
+                code = cache_lookup(m->cache, m->state.reenter_pc);
+                if (code != NULL) continue;
+            }
+
+            if (m->state.exit_reason == interp) {
+                m->state.pc = m->state.reenter_pc;
+                code = (u8 *)exec_block_interp;
+                continue;
+            }
+
+            break;
+        }
+
+        m->state.pc = m->state.reenter_pc;
+        switch (m->state.exit_reason) {
+        case direct_branch:
+        case indirect_branch:
+            // continue execution
+            break;
+        case ecall:
+            return ecall;
+        default:
+            unreachable();
+        }
+    }
 }
 
 void machine_load_program(machine_t *m, char *prog) {
