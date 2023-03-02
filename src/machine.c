@@ -51,7 +51,7 @@ enum exit_reason_t machine_step(machine_t *m) {
     }
 }
 
-void machine_load_program(machine_t *m, char* prog) {
+void machine_load_program(machine_t *m, char *prog) {
     int fd = open(prog, O_RDONLY);
     if (fd == -1) {
         fatal(strerror(errno));
