@@ -81,7 +81,7 @@ u64 mmu_alloc(mmu_t *mmu, i64 sz) {
         mmu->host_alloc += ROUNDUP(sz, page_size);
     } else if (sz < 0 && ROUNDUP(mmu->alloc, page_size) < TO_GUEST(mmu->host_alloc)) {
         u64 len = TO_GUEST(mmu->host_alloc) - ROUNDUP(mmu->alloc, page_size);
-        if (munmap((void *)ROUNDUP(mmu->alloc, page_size), len) == -1)
+        if (munmap((void *)mmu->host_alloc, len) == -1)
             fatal(strerror(errno));
         mmu->host_alloc -= len;
     }
