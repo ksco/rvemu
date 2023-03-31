@@ -14,9 +14,15 @@
 
 Bilibili 视频合集：[从零开始实现 RISC-V 模拟器（2023 春季）[链接待补充]]()，每节课的链接和简介参见课程大纲。
 
-QQ 群：`待定`
+> 如果二维码过期没有及时更新，请给刘阳发邮件：numbksco@gmail.com
 
-微信群：添加微信 `待定` 标注 `rvemu`，会拉你进群。
+QQ 群：
+
+<img src="https://ksco.cool/4TAt" style="zoom:25%; float: left" />
+
+微信群：
+
+<img src="https://ksco.cool/NCtc" style="zoom:25%; float: left;" />
 
 ## 环境配置
 
