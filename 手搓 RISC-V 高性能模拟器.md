@@ -22,7 +22,7 @@ QQ 群：
 
 微信群：
 
-<img src="https://ksco.cool/txre" style="zoom:25%; float: left;" />
+<img src="https://ksco.cool/tFm5" style="zoom:25%; float: left;" />
 
 ## 环境配置
 
