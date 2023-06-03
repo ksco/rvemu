@@ -205,12 +205,12 @@ typedef struct {
 typedef void (*exec_block_func_t)(state_t *);
 
 inline u64 machine_get_gp_reg(machine_t *m, i32 reg) {
-    assert(reg >= 0 && reg <= num_gp_regs);
+    assert(reg >= 0 && reg < num_gp_regs);
     return m->state.gp_regs[reg];
 }
 
 inline void machine_set_gp_reg(machine_t *m, i32 reg, u64 data) {
-    assert(reg >= 0 && reg <= num_gp_regs);
+    assert(reg >= 0 && reg < num_gp_regs);
     m->state.gp_regs[reg] = data;
 }
 
