@@ -22,7 +22,7 @@ QQ 群：
 
 微信群：
 
-<img src="https://ksco.cool/iZBa" style="zoom:25%; float: left;" />
+<img src="https://ksco.cool/pBFb" style="zoom:25%; float: left;" />
 
 ## 环境配置
 
@@ -91,25 +91,25 @@ QQ 群：
 
 ### 第三课：完成读取可执行文件
 
-**视频链接**：`待补充` 时长：00:36:34
+**视频链接**：[BV1ym4y1m75A](https://www.bilibili.com/video/BV1ym4y1m75A) 时长：00:36:34
 
 
 
 ### 第四课：模拟器框架
 
-**视频链接**：`待补充` 时长：00:32:16
+**视频链接**：[BV1FT411H7aR](https://www.bilibili.com/video/BV1FT411H7aR) 时长：00:32:16
 
 
 
 ### 第五课：Decoder 模块
 
-**视频链接**：`待补充` 时长：00:17:53
+**视频链接**：[BV1kz4y1Y7AC](https://www.bilibili.com/video/BV1kz4y1Y7AC) 时长：00:17:53
 
 
 
 ### 第六课：开始编写解释器模块
 
-**视频链接**：`待补充` 时长：00:25:12
+**视频链接**：[BV1ng4y157mb](https://www.bilibili.com/video/BV1ng4y157mb) 时长：00:25:12
 
 **勘误**：
 
@@ -119,13 +119,13 @@ QQ 群：
 
 ### 第七课：完成解释器模块
 
-**视频链接**：`待补充` 时长：00:55:11
+**视频链接**：[BV1CV4y1r7h2](https://www.bilibili.com/video/BV1CV4y1r7h2) 时长：00:55:11
 
 
 
 ### 第八课：使用 JIT 技术提高性能
 
-**视频链接**：`待补充` 时长：00:57:47
+**视频链接**：[BV19z4y1t75G](https://www.bilibili.com/video/BV19z4y1t75G) 时长：00:57:47
 
 
 
