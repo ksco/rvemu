@@ -58,11 +58,11 @@ u8 *machine_compile(machine_t *m, str_t source) {
                          text_shdr->sh_size, text_shdr->sh_addralign);
     }
 
-    u64 text_addr = 0;
+    u64 text_addr = 0, rodata_addr = 0;
     {
         u64 shoff = ehdr->e_shoff + rodata_idx * sizeof(elf64_shdr_t);
         elf64_shdr_t *shdr = (elf64_shdr_t *)(elfbuf + shoff);
-        cache_add(m->cache, m->state.pc, elfbuf + shdr->sh_offset,
+        rodata_addr = (u64)cache_add(m->cache, m->state.pc, elfbuf + shdr->sh_offset,
                   shdr->sh_size, shdr->sh_addralign);
         text_addr = (u64)cache_add(m->cache, m->state.pc, elfbuf + text_shdr->sh_offset,
                                    text_shdr->sh_size, text_shdr->sh_addralign);
@@ -86,7 +86,12 @@ u8 *machine_compile(machine_t *m, str_t source) {
 
             elf64_sym_t *sym = (elf64_sym_t *)(elfbuf + symtab_shdr->sh_offset + rel->r_sym * sizeof(elf64_sym_t));
             u32 *loc = (u32 *)(text_addr + rel->r_offset);
-            *loc = (u32)((i64)sym->st_value + rel->r_addend - (i64)rel->r_offset);
+            u64 S = rodata_addr + sym->st_value; /* actual virtual address of symbol */
+            u64 P = text_addr + rel->r_offset; /* relocation address */
+            i64 A = rel->r_addend;
+            *loc = (u32)(S + A - P);
+            u64 rip_addr = P - A;
+            assert(rip_addr + *(i32 *)loc == S);
         }
     }
 
