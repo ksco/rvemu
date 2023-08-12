@@ -58,11 +58,11 @@ u8 *machine_compile(machine_t *m, str_t source) {
                          text_shdr->sh_size, text_shdr->sh_addralign);
     }
 
-    u64 text_addr = 0;
+    u64 text_addr = 0, rodata_addr = 0;
     {
         u64 shoff = ehdr->e_shoff + rodata_idx * sizeof(elf64_shdr_t);
         elf64_shdr_t *shdr = (elf64_shdr_t *)(elfbuf + shoff);
-        cache_add(m->cache, m->state.pc, elfbuf + shdr->sh_offset,
+        rodata_addr = (u64)cache_add(m->cache, m->state.pc, elfbuf + shdr->sh_offset,
                   shdr->sh_size, shdr->sh_addralign);
         text_addr = (u64)cache_add(m->cache, m->state.pc, elfbuf + text_shdr->sh_offset,
                                    text_shdr->sh_size, text_shdr->sh_addralign);
@@ -86,7 +86,10 @@ u8 *machine_compile(machine_t *m, str_t source) {
 
             elf64_sym_t *sym = (elf64_sym_t *)(elfbuf + symtab_shdr->sh_offset + rel->r_sym * sizeof(elf64_sym_t));
             u32 *loc = (u32 *)(text_addr + rel->r_offset);
-            *loc = (u32)((i64)sym->st_value + rel->r_addend - (i64)rel->r_offset);
+            *loc = (u32)((rodata_addr - text_addr) + sym->st_value + rel->r_addend - rel->r_offset);
+            // ensure relocation correctly
+            u64 rip_addr = text_addr + rel->r_offset + 4; // R_X86_64_PC32 has 4 bytes address
+            assert((i64)rip_addr + (i64)*(i32*)loc == (i64)(rodata_addr + sym->st_value));
         }
     }
 
