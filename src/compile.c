@@ -86,10 +86,12 @@ u8 *machine_compile(machine_t *m, str_t source) {
 
             elf64_sym_t *sym = (elf64_sym_t *)(elfbuf + symtab_shdr->sh_offset + rel->r_sym * sizeof(elf64_sym_t));
             u32 *loc = (u32 *)(text_addr + rel->r_offset);
-            *loc = (u32)((rodata_addr - text_addr) + sym->st_value + rel->r_addend - rel->r_offset);
-            // ensure relocation correctly
-            u64 rip_addr = text_addr + rel->r_offset + 4; // R_X86_64_PC32 has 4 bytes address
-            assert((i64)rip_addr + (i64)*(i32*)loc == (i64)(rodata_addr + sym->st_value));
+            u64 S = rodata_addr + sym->st_value; /* actual virtual address of symbol */
+            u64 P = text_addr + rel->r_offset; /* relocation address */
+            i64 A = rel->r_addend;
+            *loc = (u32)(S + A - P);
+            u64 rip_addr = P - A;
+            assert(rip_addr + *(i32 *)loc == S);
         }
     }
 
