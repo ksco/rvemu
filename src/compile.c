@@ -20,7 +20,9 @@ u8 *machine_compile(machine_t *m, str_t source) {
     fflush(stdout);
 
     (void) read(outp[0], elfbuf, BINBUF_CAP);
+    close(outp[0]);
     dup2(saved_stdout, STDOUT_FILENO);
+    close(saved_stdout);
 
     elf64_ehdr_t *ehdr = (elf64_ehdr_t *)elfbuf;
 
